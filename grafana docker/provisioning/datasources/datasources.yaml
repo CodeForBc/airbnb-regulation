@@ -1,0 +1,11 @@
+apiVersion: 1
+
+datasources:
+  - name: MySQL
+    type: mysql
+    url: db:3306
+    database: airbnbProjectDB
+    user: root
+    secureJsonData:
+      password: P@ssWordAirbnb2024
+    editable: false

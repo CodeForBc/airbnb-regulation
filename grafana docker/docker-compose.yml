@@ -1,0 +1,24 @@
+version: '3'
+services:
+  db:
+    image: tonythawatchai/mysql-airbnb:latest.
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: airbnbProjectDB
+
+  grafana:
+    image: tonythawatchai/grafana-airbnb:latest.
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: always
+
+volumes:
+  db_data:
+  grafana_data:
