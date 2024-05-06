@@ -1,7 +1,7 @@
 version: '3'
 services:
   db:
-    image: tonythawatchai/mysql-airbnb:latest.
+    image: tonythawatchai/mysql-airbnb:latest
     volumes:
       - db_data:/var/lib/mysql
     restart: always
@@ -10,7 +10,7 @@ services:
       MYSQL_DATABASE: airbnbProjectDB
 
   grafana:
-    image: tonythawatchai/grafana-airbnb:latest.
+    image: tonythawatchai/grafana-airbnb:latest
     depends_on:
       - db
     ports:
