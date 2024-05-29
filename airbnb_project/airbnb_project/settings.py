@@ -40,6 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'listings',
+    'policies',
+    'listing_policy_results'
 ]
 
 MIDDLEWARE = [
