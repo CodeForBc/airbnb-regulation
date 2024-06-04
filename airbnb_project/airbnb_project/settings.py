@@ -41,8 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'listings',
-    'policies',
-    'listing_policy_results'
+    'policies'
 ]
 
 MIDDLEWARE = [
