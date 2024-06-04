@@ -1,6 +1,6 @@
 from django.db import models
-from airbnb_project.listings.listing_models import Listing
-from .policy_models import Policy
+from listings.listing_models import Listing
+from policies.models.policy_models import Policy
 
 class ListingPolicyResult(models.Model):
   listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
