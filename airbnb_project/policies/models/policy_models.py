@@ -14,11 +14,18 @@ class Policy(models.Model):
   name = models.CharField(max_length=100)
   description = models.CharField(max_length=100)
 
-  def __str__(self):
+  def __str__(self) -> str:
     """
     Returns a string representation of the Policy instance.
 
     Returns:
         str: The name of the policy.
     """
-    return self.policy_name
+    return self.name
+
+  @property
+  def get_evaluation_result(self) -> bool:
+    """
+    Abstract method to evaluate the policy
+    """
+    pass
