@@ -1,6 +1,5 @@
 from .policy_models import Policy
-
-
+from .listing_policy_result_models import ListingPolicyResult
 class PolicyClient:
   """
   The policy results contain the policy and result of whether it is violated (bool)
@@ -37,13 +36,15 @@ class PolicyClient:
     """
     Run evaluate method in a Policy object
     and append policy name and the result to list of violations
+    Returns:
+      list[ListingPolicyResult]: A list of ListingPolicyResult objects containing the evaluation results.
     """
 
     # Use method name (str) in result
-    policy_name = self._policy.get_policy_name()
+    policy_name = str(self._policy)
 
     # Result includes policy name as key, and the return value of that policy as value
-    policy_result = self._policy.evaluate()
+    policy_result = self._policy.get_evaluation_result()
 
     # Only include violation results if policy name does not exist
     if not any(policy_name in result for result in self.violation_results):
@@ -52,7 +53,7 @@ class PolicyClient:
     else:
       raise ValueError(f"{policy_name} already existed in violation results")
 
-  def get_all_violation_results(self) -> list[dict[str, bool]]:
+  def get_all_violation_results(self) -> list[ListingPolicyResult]:
     """
     Get all violation results with policy name and the result
 
