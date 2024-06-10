@@ -14,6 +14,12 @@ class Policy(models.Model):
   name = models.CharField(max_length=100)
   description = models.CharField(max_length=100)
 
+  class Meta:
+    """
+    Make this class abstract base class for Policy models
+    """
+    abstract = True
+
   def __str__(self) -> str:
     """
     Returns a string representation of the Policy instance.
@@ -28,4 +34,4 @@ class Policy(models.Model):
     """
     Abstract method to evaluate the policy
     """
-    pass
+    raise NotImplementedError("Policies must implement this method")

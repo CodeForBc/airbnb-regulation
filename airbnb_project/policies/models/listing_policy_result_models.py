@@ -11,7 +11,7 @@ class ListingPolicyResult(models.Model):
       policy (ForeignKey): Reference to the Policy model instance.
       policy_result (BooleanField): The result of the policy evaluation (True if the listing complies with the policy, False otherwise).
       result_details (TextField): Additional details about the policy check result.
-      result_datetime (DateTimeField): The date and time when the policy evaluation result was recorded.
+      result_datetime (DateTimeField): The date and time when the policy evaluation result was recorded/updated.
 
   Methods:
       __str__(): Returns a string representation of the ListingPolicyResult instance, indicating the result ID, listing name, and policy name.
@@ -20,7 +20,7 @@ class ListingPolicyResult(models.Model):
   policy = models.ForeignKey(Policy, on_delete=models.CASCADE)
   policy_result = models.BooleanField()
   result_details = models.TextField()
-  result_datetime = models.DateTimeField()
+  result_datetime = models.DateTimeField(auto_now_add=True, auto_now=True)
 
   def __str__(self):
     """
