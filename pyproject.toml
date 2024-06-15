@@ -16,3 +16,19 @@ python-dotenv = "^1.0.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+[tool.poetry]
+name = "airbnb-regulation"
+version = "0.1.0"
+description = "This project aims to flag Airbnb listings that violates BC short-term rental policy."
+authors = ["Nam, Mangat, Tony"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+psycopg = "^3.1.19"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
