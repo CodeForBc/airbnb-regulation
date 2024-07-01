@@ -6,7 +6,7 @@ import re
 class ValidRegistrationNumberPolicy(Policy):
   registration_number = models.CharField(max_length=20)
 
-  def is_valid_registration_number(self, registration_number: str) -> bool:
+  def is_valid_registration_number(self) -> bool:
     if self.registration_number is None or self.registration_number == "":
       return False
     
