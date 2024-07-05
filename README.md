@@ -33,6 +33,24 @@ Dependencies are defined in [`pyproject.toml`](./pyproject.toml) and specific ve
 into [`poetry.lock`](./poetry.lock). This allows for exact reproducible environments across
 all machines that use the project, both during development and in production.
 
+To make sure virtual env is created in project's root directory
+```bash
+$ poetry config virtualenvs.in-project true
+```
+
+To confirm the config has been changed, it can be checked with 
+```bash
+$ poetry config --list
+```
+
+> Please note if a virtual environment has already been created under `{cache-dir}/virtualenvs`, setting this to `true` will not cause poetry to create or use a local virtual environment.
+> 
+> To remove an existed env, list the env and remove it with
+> ```bash
+> $ poetry env list --full-path // see list of env-paths
+> $ poetry env remove env-path
+> ```
+
 To install all dependencies into an isolated virtual environment:
 
 > Append `--sync` to uninstall dependencies that are no longer in use from the virtual environment.
@@ -70,3 +88,9 @@ To add development dependency:
 ```bash
 $ poetry add -G dev <dependency_name>
 ```
+
+## References
+
+[Poetry Configuration](https://python-poetry.org/docs/configuration/)
+
+[Poetry Managing environments](https://python-poetry.org/docs/managing-environments/)
