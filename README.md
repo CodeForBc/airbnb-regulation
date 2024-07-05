@@ -25,6 +25,8 @@ To proceed,
 [install Poetry globally](https://python-poetry.org/docs/#installation)
 onto your system.
 
+Please note that **Python 3.8+** is required to install Poetry per [System requirement](https://python-poetry.org/docs/#system-requirements).
+
 ### Dependencies
 
 Dependencies are defined in [`pyproject.toml`](./pyproject.toml) and specific versions are locked
