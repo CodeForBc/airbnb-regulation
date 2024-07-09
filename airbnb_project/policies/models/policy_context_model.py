@@ -1,6 +1,6 @@
-from .policy_models import Policy
-from ...listings.listing_models import Listing
-from .listing_policy_result_models import ListingPolicyResult
+from .policy_model import Policy
+from listings.listing_models import Listing
+from .listing_policy_result_model import ListingPolicyResult
 
 class PolicyContext:
   """
