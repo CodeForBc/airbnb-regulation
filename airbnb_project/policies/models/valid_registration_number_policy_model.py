@@ -25,4 +25,4 @@ class ValidRegistrationNumberPolicy(Policy):
     
   @property
   def get_evaluation_result(self) -> bool:
-    return self.is_valid_registration_number(self.registration_number)
+    return self.is_valid_registration_number()
