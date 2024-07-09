@@ -19,7 +19,7 @@ load_dotenv(find_dotenv())
 # Override or add specific test settings here
 DATABASES['default']['NAME'] = 'airbnb_db'
 DATABASES['default']['USER'] = 'admin'
-DATABASES['default']['PASSWORD'] = os.environ['TEST_POLICIES_DB_PASSWORD']
+DATABASES['default']['PASSWORD'] = os.environ['TEST_DB_PASSWORD']
 DATABASES['default']['HOST'] = 'localhost'
 DATABASES['default']['PORT'] = '5432'
 
