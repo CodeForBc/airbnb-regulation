@@ -103,3 +103,50 @@ class AirbnbListingsPipelineDataCleaner:
             print(f"Error extracting bathrooms: {e}")
 
         adapter['baths'] = bathroom
+
+
+class DatabaseStoragePipeline:
+
+    def __init__(self):
+        self.con = sqlite3.connect('airbnb.db')
+        self.cur = self.con.cursor()
+        self.create_table()
+
+    def create_table(self):
+        self.cur.execute("""
+        Create TABLE IF NOT EXISTS listings(
+        airbnb_listing_id INTEGER PRIMARY KEY,
+        baths INTEGER,
+        beds INTEGER,
+        latitude FLOAT,
+        longitude FLOAT,
+        name TEXT,
+        person_capacity INTEGER,
+        registration_number TEXT,
+        room_type TEXT,
+        title TEXT,
+        is_bath_shared INTEGER,
+        baths_text TEXT
+        )
+        """)
+
+    def process_item(self, item, spider):
+        bath_is_shared = 1 if item.get('bath_is_shared') else 0
+        self.cur.execute(
+            """INSERT OR IGNORE INTO listings VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"""
+            , (
+                item['airbnb_listing_id'],
+                item['baths'],
+                item['beds'],
+                item['latitude'],
+                item['longitude'],
+                item['name'],
+                item['person_capacity'],
+                item['registration_number'],
+                item['room_type'],
+                item['title'],
+                bath_is_shared,
+                item['baths_text'],
+            ))
+        self.con.commit()
+        return item

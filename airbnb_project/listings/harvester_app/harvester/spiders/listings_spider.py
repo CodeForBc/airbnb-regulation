@@ -1,5 +1,6 @@
 import csv
 import json
+import random
 
 import scrapy
 from scrapy import Request
@@ -21,6 +22,37 @@ API_KEY = "d306zoyjsyarp7ifhu67rjxn52tv0t20"
 
 # Zoom level parameter used in the map URL templates to define the zoom level of the map.
 ZOOM_LEVEL = 15.4
+
+START_DATE = "2024-06-07"
+
+# A specific map URL for searching Airbnb listings in Vancouver with predefined coordinates and search parameters.
+MAP_URL = "https://www.airbnb.ca/s/Vancouver--Canada/homes?drawer_open=true&tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&query=Vancouver%2C%20Canada&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&flexible_trip_lengths%5B%5D=one_week&monthly_start_date={}&monthly_length=3&monthly_end_date=2024-08-01&search_mode=regular_search&price_filter_input_type=0&channel=EXPLORE&ne_lat=49.29513742488498&ne_lng=-123.10579065845081&sw_lat=49.27164621670274&sw_lng=-123.14562551992225&search_by_map=true&zoom_level=13.966716075400992&map_toggle=true&search_type=user_map_move&price_filter_num_nights=5&zoom=13.966716075400992"
+
+# URL template for searching Airbnb listings in Vancouver with placeholders for coordinates and zoom level.
+# This template focuses on homes available for a one-week stay within specific dates.
+MAP_URL_TEMPLATE1 = "https://www.airbnb.ca/s/Vancouver--Canada/homes?drawer_open=true&tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&query=Vancouver%2C%20Canada&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&flexible_trip_lengths%5B%5D=one_week&monthly_start_date={}&monthly_length=2&monthly_end_date=2024-07-01&search_mode=regular_search&price_filter_input_type=0&channel=EXPLORE&ne_lat={}&ne_lng={}&sw_lat={}&sw_lng={}&search_by_map=true&zoom_level={}&map_toggle=true&search_type=user_map_move&price_filter_num_nights=5&zoom={}"
+
+# URL template similar to the previous one but includes additional flexible trip date options (May, June, July, August) and focuses on weekend trips.
+MAP_URL_TEMPLATE2 = "https://www.airbnb.ca/s/Vancouver--Canada/homes?drawer_open=true&tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&query=Vancouver%2C%20Canada&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&flexible_trip_lengths%5B%5D=one_week&monthly_start_date={}&monthly_length=2&monthly_end_date=2024-07-01&search_mode=regular_search&price_filter_input_type=0&channel=EXPLORE&ne_lat={}&ne_lng={}&sw_lat={}&sw_lng={}&search_by_map=true&zoom_level={}&map_toggle=true&search_type=user_map_move&price_filter_num_nights=5&zoom={}&flexible_trip_dates%5B%5D=august&flexible_trip_dates%5B%5D=july&flexible_trip_dates%5B%5D=june&flexible_trip_dates%5B%5D=may&flexible_trip_lengths%5B%5D=weekend_trip"
+
+# URL template for searching Airbnb listings in Vancouver with placeholders for coordinates and zoom level.
+# This template includes a variety of search parameters including flexible trip dates and lengths.
+MAP_URL_TEMPLATE = "https://www.airbnb.ca/s/Vancouver--Canada/homes?drawer_open=true&tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&query=Vancouver%2C%20Canada&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&flexible_trip_lengths%5B%5D=one_week&monthly_start_date={}&monthly_length=2&monthly_end_date=2024-07-01&search_mode=regular_search&price_filter_input_type=0&channel=EXPLORE&ne_lat={}&ne_lng={}&sw_lat={}&sw_lng={}&search_by_map=true&zoom_level={}&map_toggle=true&search_type=user_map_move&price_filter_num_nights=5&zoom={}&flexible_trip_dates%5B%5D=august&flexible_trip_dates%5B%5D=july&flexible_trip_dates%5B%5D=june&flexible_trip_dates%5B%5D=may&lexible_trip_lengths%5B%5D=one_month&adults=1&children=1&infants=1&pets=1&checkin=2024-05-17&checkout=2024-06-10&flexible_date_search_filter_type=3"
+
+# URL template for searching Airbnb listings in Vancouver for a month-long stay.
+# Includes placeholders for coordinates and zoom level, as well as a focus on monthly stays.
+MAP_URL_TEMPLATE3 = "https://www.airbnb.ca/s/Vancouver--Canada/homes?drawer_open=true&tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&query=Vancouver%2C%20Canada&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&flexible_trip_lengths%5B%5D=one_month&monthly_start_date={}&monthly_length=2&monthly_end_date=2024-07-01&search_mode=regular_search&price_filter_input_type=0&channel=EXPLORE&ne_lat={}&ne_lng={}&sw_lat={}&sw_lng={}&search_by_map=true&zoom_level={}&map_toggle=true&search_type=user_map_move&price_filter_num_nights=28&zoom={}"
+
+# A list of all URL templates for map-based searches, combining different search parameters and flexible options.
+MAP_URL_TEMPLATES = [MAP_URL_TEMPLATE1, MAP_URL_TEMPLATE2, MAP_URL_TEMPLATE, MAP_URL_TEMPLATE3]
+
+DATES_URL = "https://www.airbnb.ca/s/Vancouver--British-Columbia--Canada/homes?tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&monthly_start_date={}&monthly_length=3&monthly_end_date=2024-09-19&price_filter_input_type=0&channel=EXPLORE&query=Vancouver%2C%20BC&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&date_picker_type=calendar&flexible_trip_dates%5B%5D=june&source=structured_search_input_header&search_type=filter_change&search_mode=regular_search&price_filter_num_nights=80&ne_lat={}&ne_lng={}&sw_lat={}&sw_lng={}&zoom={}&zoom_level={}&search_by_map=true&flexible_trip_lengths%5B%5D=one_month&checkin=2024-06-09&checkout=2024-06-13&flexible_date_search_filter_type=0"
+MONTHS_URL = "https://www.airbnb.ca/s/Vancouver--British-Columbia--Canada/homes?tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&monthly_start_date={}&monthly_length=3&monthly_end_date=2024-07-29&price_filter_input_type=0&channel=EXPLORE&query=Vancouver%2C%20BC&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&date_picker_type=monthly_stay&flexible_trip_dates%5B%5D=june&source=structured_search_input_header&search_type=filter_change&search_mode=regular_search&price_filter_num_nights=28&ne_lat={}&ne_lng={}&sw_lat={}&sw_lng={}&zoom_level={}&zoom={}&search_by_map=true&flexible_trip_lengths%5B%5D=one_month"
+FLEXIBLE_URL_WEEK = "https://www.airbnb.ca/s/Vancouver--British-Columbia--Canada/homes?tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&monthly_start_date={}&monthly_length=3&monthly_end_date=2024-10-01&price_filter_input_type=0&channel=EXPLORE&query=Vancouver%2C%20BC&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&date_picker_type=flexible_dates&flexible_trip_dates%5B%5D=june&source=structured_search_input_header&search_type=filter_change&search_mode=regular_search&price_filter_num_nights=2&ne_lat={}&ne_lng={}&sw_lat={}&sw_lng={}&zoom_level={}&zoom={}&search_by_map=true&flexible_trip_lengths%5B%5D=one_week"
+FLEXIBLE_URL_WEEKEND = "https://www.airbnb.ca/s/Vancouver--British-Columbia--Canada/homes?tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&monthly_start_date={}&monthly_length=3&monthly_end_date=2024-10-01&price_filter_input_type=0&channel=EXPLORE&query=Vancouver%2C%20BC&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&date_picker_type=flexible_dates&flexible_trip_lengths%5B%5D=weekend_trip&flexible_trip_dates%5B%5D=june&source=structured_search_input_header&search_type=user_map_move&search_mode=regular_search&price_filter_num_nights=2&ne_lat={}&ne_lng={}&sw_lat={}&sw_lng={}&zoom={}&zoom_level={}&search_by_map=true"
+FLEXIBLE_URL_MONTH = "https://www.airbnb.ca/s/Vancouver--British-Columbia--Canada/homes?tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&monthly_start_date={}&monthly_length=3&monthly_end_date=2024-10-01&price_filter_input_type=0&channel=EXPLORE&query=Vancouver%2C%20BC&place_id=ChIJs0-pQ_FzhlQRi_OBm-qWkbs&date_picker_type=flexible_dates&flexible_trip_dates%5B%5D=june&source=structured_search_input_header&search_type=filter_change&search_mode=regular_search&price_filter_num_nights=5&ne_lat={}&ne_lng={}&sw_lat={}&sw_lng={}&zoom={}&zoom_level={}&search_by_map=true&flexible_trip_lengths%5B%5D=one_month"
+NEW_URLS = [DATES_URL, MONTHS_URL, FLEXIBLE_URL_MONTH, FLEXIBLE_URL_WEEK, FLEXIBLE_URL_WEEKEND]
+ALL_URLS = NEW_URLS + MAP_URL_TEMPLATES
 
 
 def n(s):
