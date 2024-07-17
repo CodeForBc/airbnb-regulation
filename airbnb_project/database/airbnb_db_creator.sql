@@ -1,12 +1,12 @@
 CREATE TABLE IF NOT EXISTS listing (
     airbnb_listing_id VARCHAR(20) PRIMARY KEY,
-    baths VARCHAR(10),
-    beds VARCHAR(10),
-    latitude VARCHAR(20),
+    baths INT,
+    beds INT,
+    latitude DECIMAL(8,6), 
     location VARCHAR(20),
-    longitude VARCHAR(20),
+    longitude DECIMAL(9,6),
     name VARCHAR(100),
-    person_capacity VARCHAR(20),
+    person_capacity INT,
     registration_number VARCHAR(20),
     room_type VARCHAR(20),
     title VARCHAR(100)
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS policy (
 
 CREATE TABLE IF NOT EXISTS listing_policy_result (
     result_id SERIAL PRIMARY KEY,
-    airbnb_listing_id VARCHAR(20),
+    airbnb_listing_id VARCHAR(50),
     policy_id INT,
     policy_result BOOLEAN,
     result_details VARCHAR(255),
@@ -30,9 +30,9 @@ CREATE TABLE IF NOT EXISTS listing_policy_result (
 );
 
 INSERT INTO listing (airbnb_listing_id, baths, beds, latitude, location, longitude, name, person_capacity, registration_number, room_type, title) VALUES
-('1', '1', '1', '49.2827', 'Vancouver', '123.1207', 'Listing 1', '2', '12345', 'Private Room', 'Beautiful Room in Vancouver'),
-('2', '2', '2', '49.2827', 'Vancouver', '123.1207', 'Listing 2', '4', '67890', 'Entire Home', 'Luxury Home in Vancouver'),
-('3', '1', '1', '49.2827', 'Vancouver', '123.1207', 'Listing 3', '2', '11223', 'Shared Room', 'Cozy Room in Vancouver');
+('1', 1, 1, 49.2827, 'Vancouver', 123.1207, 'Listing 1', 2, '12345', 'Private Room', 'Beautiful Room in Vancouver'),
+('2', 2, 2, 49.2827, 'Vancouver', 123.1207, 'Listing 2', 4, '67890', 'Entire Home', 'Luxury Home in Vancouver'),
+('3', 1, 1, 49.2827, 'Vancouver', 123.1207, 'Listing 3', 2, '11223', 'Shared Room', 'Cozy Room in Vancouver');
 
 INSERT INTO policy (policy_id, policy_name, policy_description) VALUES
 (1, 'Policy 1', 'This is policy 1'),
