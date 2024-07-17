@@ -1,8 +1,6 @@
 # Use the official Docker Hub Postgres image
 FROM postgres:latest
 
-
-
 # Copy the local file to the container's filesystem
 COPY airbnb_db_creator.sql /docker-entrypoint-initdb.d/
 
