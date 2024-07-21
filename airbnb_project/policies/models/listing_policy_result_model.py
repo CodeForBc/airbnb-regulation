@@ -24,12 +24,3 @@ class ListingPolicyResult(models.Model):
   policy_result = models.BooleanField()
   result_details = models.TextField()
   result_datetime = models.DateTimeField(auto_now_add=True)
-
-  def __str__(self):
-    """
-    Returns a string representation of the ListingPolicyResult instance.
-
-    Returns:
-        str: A string indicating the result ID, listing name, and policy name.
-    """
-    return f'Result {self.id} for listing {self.listing.name} and policy {self.policy.name}'
