@@ -80,6 +80,7 @@ WSGI_APPLICATION = 'airbnb_project.wsgi.application'
 
 DATABASES = {
     'default': {
+        'NAME': 'airbnb_db',
         'ENGINE': 'django.db.backends.postgresql',
     }
 }
