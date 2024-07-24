@@ -4,11 +4,11 @@ import random
 
 import scrapy
 from scrapy import Request
-from harvester.items import AirBnBListingItem, ExpandedAirBnBListingItem
+from listings.harvester_app.harvester.items import AirBnBListingItem, ExpandedAirBnBListingItem
 from scrapy.http import Response
 import base64
 
-from harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
+from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
 
 # The tag used to identify the specific script data within the Airbnb HTML page.
 SCRIPT_TAG = "data-deferred-state-0"
