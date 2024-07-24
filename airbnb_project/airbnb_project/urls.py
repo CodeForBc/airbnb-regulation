@@ -15,8 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('listings/', include('listings.urls'))
+    # path("scrape-airbnb-listings/", scrape_hacker_news, name="scrape_hacker_news"),
 ]
