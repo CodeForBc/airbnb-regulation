@@ -12,8 +12,8 @@ class Policy(models.Model):
   Methods:
       __str__(): Returns a string representation of the Policy instance, which is the name of the policy.
   """
-  name = models.CharField(max_length=100)
-  description = models.CharField(max_length=100)
+  name = models.CharField(max_length=255)
+  description = models.CharField(max_length=255)
   listing_policy_result = GenericRelation('ListingPolicyResult')
 
   class Meta:
