@@ -3,38 +3,42 @@ from policies.policies.valid_registration_number_policy import ValidRegistration
 class ValidRegistrationNumberPolicyTest(TestCase):
   def setUp(self):
     # Create instances of ValidRegistrationNumberPolicy with various registration numbers
-    self.valid_policy = ValidRegistrationNumberPolicy(registration_number="20-123456")
-    self.invalid_format_policy = ValidRegistrationNumberPolicy(registration_number="20123456")
-    self.invalid_year_policy = ValidRegistrationNumberPolicy(registration_number="12-123456")
-    self.empty_policy = ValidRegistrationNumberPolicy(registration_number="")
-    self.none_policy = ValidRegistrationNumberPolicy(registration_number=None)
-  
+    self.policy = ValidRegistrationNumberPolicy(
+      name="Valid Registration Policy",
+      description="Check if the registration number is valid"
+    )
+    
   def test_valid_registration_number(self):
     """
     Test valid registration number.
     """
-    self.assertTrue(self.valid_policy.get_evaluation_result)
+    valid_registration_number="20-123456"
+    self.assertTrue(self.policy.get_evaluation_result(valid_registration_number))
 
   def test_invalid_format_registration_number(self):
     """
     Test invalid format registration number.
     """
-    self.assertFalse(self.invalid_format_policy.get_evaluation_result)
+    invalid_registration_number="20123456"
+    self.assertFalse(self.policy.get_evaluation_result(invalid_registration_number))
 
   def test_invalid_year_registration_number(self):
     """
     Test invalid year registration number.
     """
-    self.assertFalse(self.invalid_year_policy.get_evaluation_result)
+    invalid_year_registration_number="12-123456"
+    self.assertFalse(self.policy.get_evaluation_result(invalid_year_registration_number))
 
   def test_empty_registration_number(self):
     """
     Test empty registration number.
     """
-    self.assertFalse(self.empty_policy.get_evaluation_result)
+    empty_registration_number=""
+    self.assertFalse(self.policy.get_evaluation_result(empty_registration_number))
 
   def test_none_registration_number(self):
     """
     Test None registration number.
     """
-    self.assertFalse(self.none_policy.get_evaluation_result)
+    none_registration_number=None
+    self.assertFalse(self.policy.get_evaluation_result(none_registration_number))
