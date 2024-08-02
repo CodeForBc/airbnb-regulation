@@ -1,5 +1,5 @@
 from django.test import TestCase
-from policies.models.valid_registration_number_policy_model import ValidRegistrationNumberPolicy
+from policies.policies.valid_registration_number_policy import ValidRegistrationNumberPolicy
 class ValidRegistrationNumberPolicyTest(TestCase):
   def setUp(self):
     # Create instances of ValidRegistrationNumberPolicy with various registration numbers

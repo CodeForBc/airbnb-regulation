@@ -1,5 +1,5 @@
 from django.db import models
-from .policy_model import Policy
+from ..models.policy_model import Policy
 
 import re
 
