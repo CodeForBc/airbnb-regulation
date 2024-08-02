@@ -4,7 +4,7 @@ class ValidRegistrationNumberPolicyTest(TestCase):
   def setUp(self):
     # Create instances of ValidRegistrationNumberPolicy with various registration numbers
     self.policy = ValidRegistrationNumberPolicy(
-      name="Valid Registration Policy",
+      name="Valid Registration Number Policy",
       description="Check if the registration number is valid"
     )
     
