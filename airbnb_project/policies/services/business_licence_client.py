@@ -1,5 +1,6 @@
 import json
 import requests
+import logging
 from urllib3.exceptions import HTTPError
 
 class BusinessLicenceClient:
@@ -32,23 +33,18 @@ class BusinessLicenceClient:
         """
         return {"where": 'businesstype="Short-term Rental Operator"'}
 
-    def _get_licence_status(self) -> dict:
+    def _get_latest_licence_status(self) -> dict:
         """
-        Generate query parameters to select the licence status.
+        Generate query parameters to select the licence status by the latest licence revision.
         
         Returns:
-            dict: Query parameters for selecting licence status.
+            dict: Query parameters for selecting latest licence status.
         """
-        return {"select": "status"}
-    
-    def _order_by_latest_licence_revision(self):
-        """
-        Generate query parameters to order results by the latest licence revision.
-        
-        Returns:
-            dict: Query parameters for ordering by latest licence revision number.
-        """
-        return {"order_by": "licencerevisionnumber desc"}
+        return {
+          "select": "status",
+          "order_by": "licencerevisionnumber desc",
+          "limit": "1"
+        }
 
     def _make_request(self, params: dict) -> dict:
         """
@@ -70,10 +66,10 @@ class BusinessLicenceClient:
             response.raise_for_status()
             return response.json()
         except HTTPError as e:
-            print(f"Error fetching data: {e}")
+            logging.error(f"Error fetching data: {e}")
             raise e
         except json.JSONDecodeError as e:
-            print(f"Error decoding data: {e}")
+            logging.error(f"Error decoding data: {e}")
             raise e
 
     def _process_licence_status_results(self, response_data: dict) -> str:
@@ -86,8 +82,24 @@ class BusinessLicenceClient:
         Returns:
             str: Licence status.
         """
-        result = response_data["results"]
-        return result[0]["status"]
+        try:
+          results = response_data.get("results", [])
+          if not results:
+            logging.warning("No results found in response data.")
+            return "No results found"
+        
+          # Get status in results
+          status = results[0].get("status")
+          
+          if not status:
+            logging.warning("Status not found in the first result.")
+            return "Status not found"
+          
+          return status
+        
+        except (KeyError, IndexError, TypeError) as e:
+          logging.error(f"Error processing response data: {e}")
+          return "Error processing data"
 
     def _merge_query_parameters(self, *parameters: dict) -> dict:
         """
@@ -130,8 +142,7 @@ class BusinessLicenceClient:
         params = self._merge_query_parameters(
             self._filter_by_short_term_rental_business(),
             self._filter_by_licence_number(licence_number),
-            self._order_by_latest_licence_revision(),
-            self._get_licence_status(),
+            self._get_latest_licence_status(),
         )
         response_data = self._make_request(params)
 

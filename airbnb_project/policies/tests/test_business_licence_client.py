@@ -19,3 +19,6 @@ class BusinessLicenceClientTest(TestCase):
 
     gone_out_of_business_listing_status = client.get_licence_status("24-159005")
     self.assertEqual(gone_out_of_business_listing_status, "Gone Out of Business")
+
+    invalid_business_listing_status = client.get_licence_status("24-100000")
+    self.assertEqual(invalid_business_listing_status, "No results found")
