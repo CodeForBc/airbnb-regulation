@@ -31,7 +31,7 @@ class Policy(models.Model):
     """
     return self.name
 
-  def get_evaluation_result(self) -> bool:
+  def evaluate(self) -> bool:
     """
     Abstract method to evaluate the policy
     """

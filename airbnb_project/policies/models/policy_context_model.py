@@ -57,7 +57,7 @@ class PolicyContext:
       result = ListingPolicyResult.objects.create(
         listing = self._listing,
         policy = self._policy,
-        policy_result = self._policy.get_evaluation_result(),
+        policy_result = self._policy.evaluate(),
         result_details = f"Policy {str(self._policy)} evaluated successfully",
       )
       self.policy_results.append(result)
