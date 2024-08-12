@@ -1,13 +1,11 @@
 import csv
 import json
-import random
-
+import base64
 import scrapy
 from scrapy import Request
-from harvester.items import AirBnBListingItem, ExpandedAirBnBListingItem
+from harvester.items import ExpandedAirBnBListingItem
 from scrapy.http import Response
-import base64
-
+from urllib.parse import quote
 from harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
 
 # The tag used to identify the specific script data within the Airbnb HTML page.
@@ -25,29 +23,27 @@ ZOOM_LEVEL = 15.4
 
 
 
-def n(s):
+
+def base64_encode_string(input_string):
     """
     Encode the input string `s` into bytes, then encode it in base64, and decode it back to a UTF-8 string.
 
-    :param s: The input string to be encoded.
+    :param input_string: The input string to be encoded.
     :return: The base64 encoded string.
     """
-    return base64.b64encode(s.encode('utf-8')).decode('utf-8')
+    return base64.b64encode(input_string.encode('utf-8')).decode('utf-8')
 
 
-from urllib.parse import quote
-
-
-def t(n, t):
+def combine_and_url_encode(base_string, url_string):
     """
     Encode the second string `t` using URL encoding, replace spaces with plus signs, and return the combined format.
 
-    :param n: The first part of the string to be combined.
-    :param t: The string to be URL encoded and combined.
+    :param base_string: The first part of the string to be combined.
+    :param url_string: The string to be URL encoded and combined.
     :return: A formatted string combining `n` and the encoded version of `t`.
     """
-    encoded_t = quote(t, safe='').replace('%20', '+').replace('(', '%28').replace(')', '%29')
-    return f"{n}:{encoded_t}"
+    encoded_t = quote(url_string, safe='').replace('%20', '+').replace('(', '%28').replace(')', '%29')
+    return f"{base_string}:{encoded_t}"
 
 
 class ListingsSpider(scrapy.Spider):
@@ -86,10 +82,7 @@ class ListingsSpider(scrapy.Spider):
         """
         file_name = self.settings.get("CSV_STORE_FILE_NAME")
         try:
-            with open(
-                    f"{file_name}",
-                    "r",
-                    encoding="utf8") as file:
+            with open(f"{file_name}", "r", encoding="utf8") as file:
                 read_csv_file = csv.DictReader(file)
                 for row in read_csv_file:
                     row: dict
@@ -98,7 +91,7 @@ class ListingsSpider(scrapy.Spider):
             print(e)
         requests = []
         try:
-            with open('cordinates.json', 'r') as file:
+            with open('coordinates.json', 'r') as file:
                 coordinates = json.load(file)
                 urls = ListingsSpider.URL_BUILDER.get_urls("july", "june", "august")
                 if coordinates is not None:
@@ -124,8 +117,6 @@ class ListingsSpider(scrapy.Spider):
         Yields:
             Request: A request object for each listing's details page.
         """
-        if response.status != 200:
-            return
         script_tag = response.css(f'script#{SCRIPT_TAG}')
         script_inner_text = script_tag.css('script::text').get()
         script_json = json.loads(script_inner_text)
@@ -146,7 +137,7 @@ class ListingsSpider(scrapy.Spider):
                 latitude = coordinate.get("latitude", "")
                 longitude = coordinate.get("longitude", "")
                 room_type = listing.get("roomTypeCategory", "")
-                page_url = API_CALL.format(n(t("StayListing", listing_id)))
+                page_url = API_CALL.format(base64_encode_string(combine_and_url_encode("StayListing", listing_id)))
                 airbnb_params = {
                     "airbnb_listing_id": listing_id,
                     "title": title,
@@ -183,7 +174,7 @@ class ListingsSpider(scrapy.Spider):
             response (Response): The response object from the request.
 
          Yields:
-            AirBnBListingItem: An AirBnBListingItem object containing details of an Airbnb listing.
+            ExpandedAirBnBListingItem: An ExpandedAirBnBListingItem object containing details of an Airbnb listing.
         """
         airbnb_params = response.meta.get('airbnb_params', {})
         listing_item = ExpandedAirBnBListingItem(
@@ -194,9 +185,20 @@ class ListingsSpider(scrapy.Spider):
             longitude=airbnb_params.get('longitude'),
             room_type=airbnb_params.get('room_type')
         )
+        try:
+            script_tag_json = json.loads(response.text)
+            ListingsSpider._parse_capacity_and_location(script_tag_json, listing_item)
+            ListingsSpider._parse_listings_number(script_tag_json, listing_item)
+        except Exception as e:
+            print(e)
+        finally:
+            yield listing_item
 
-        script_tag_json = json.loads(response.text)
-
+    @staticmethod
+    def _parse_capacity_and_location(script_tag_json, listing_item):
+        """
+        Parse method to extract the room capacity and location(City) of the listing.
+        """
         location = ""
         person_capacity = ""
         try:
@@ -205,11 +207,17 @@ class ListingsSpider(scrapy.Spider):
                 sharing_config = metadata.get("sharingConfig", {})
                 location = sharing_config.get("location", "")
                 person_capacity = sharing_config.get("personCapacity", "")
-
         except Exception as e:
             print(e)
-        listing_item['location'] = location
-        listing_item['person_capacity'] = person_capacity
+        finally:
+            listing_item['location'] = location
+            listing_item['person_capacity'] = person_capacity
+
+    @staticmethod
+    def _parse_listings_number(script_tag_json, listing_item):
+        """
+        Parse method to extract registration number, number of beds and number of baths
+        """
         registration_number = ""
         number_of_beds = ""
         number_of_baths = ""
@@ -233,11 +241,10 @@ class ListingsSpider(scrapy.Spider):
                             number_of_baths = title
         except Exception as e:
             print("Exception occurred:", e)
-
-        listing_item["beds"] = number_of_beds
-        listing_item["baths_text"] = number_of_baths
-        listing_item["registration_number"] = registration_number
-        yield listing_item
+        finally:
+            listing_item["beds"] = number_of_beds
+            listing_item["baths_text"] = number_of_baths
+            listing_item["registration_number"] = registration_number
 
     @staticmethod
     def _safe_get(data: dict, *keys, default=None):
