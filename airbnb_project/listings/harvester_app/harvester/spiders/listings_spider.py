@@ -197,7 +197,14 @@ class ListingsSpider(scrapy.Spider):
     @staticmethod
     def _parse_capacity_and_location(script_tag_json, listing_item):
         """
-        Parse method to extract the room capacity and location(City) of the listing.
+        Extract the room capacity and location (City) of the listing from the provided JSON data.
+
+        Args:
+            script_tag_json (dict): The JSON data extracted from the script tag containing the listing metadata.
+            listing_item (dict): The dictionary representing a single listing, where parsed data will be stored.
+
+        Returns:
+            None: This method modifies the `listing_item` dictionary in place, adding 'location' and 'person_capacity'.
         """
         location = ""
         person_capacity = ""
@@ -216,7 +223,14 @@ class ListingsSpider(scrapy.Spider):
     @staticmethod
     def _parse_listings_number(script_tag_json, listing_item):
         """
-        Parse method to extract registration number, number of beds and number of baths
+        Extract the registration number, number of beds, and number of baths from the provided JSON data.
+
+        Args:
+            script_tag_json (dict): The JSON data extracted from the script tag containing the listing details.
+            listing_item (dict): The dictionary representing a single listing, where parsed data will be stored.
+
+        Returns:
+            None: This method modifies the `listing_item` dictionary in place, adding 'registration_number', 'beds', and 'baths_text'.
         """
         registration_number = ""
         number_of_beds = ""
