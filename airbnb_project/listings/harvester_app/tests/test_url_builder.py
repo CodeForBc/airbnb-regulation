@@ -54,6 +54,11 @@ class TestAirBnbURLBuilder(unittest.TestCase):
         self.assertEqual(check_in, "2023-08-01")
         self.assertEqual(check_out, "2023-08-06")
 
+    def test_get_current_months(self):
+        current_months = ("august", "september", "october")
+        get_months = self.builder._get_current_months()
+        self.assertEqual(current_months, get_months)
+
 
 if __name__ == '__main__':
     unittest.main()
