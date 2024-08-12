@@ -26,7 +26,7 @@ ZOOM_LEVEL = 15.4
 
 def base64_encode_string(input_string):
     """
-    Encode the input string `s` into bytes, then encode it in base64, and decode it back to a UTF-8 string.
+    Encode the input string `input_string` into bytes, then encode it in base64, and decode it back to a UTF-8 string.
 
     :param input_string: The input string to be encoded.
     :return: The base64 encoded string.
@@ -36,11 +36,11 @@ def base64_encode_string(input_string):
 
 def combine_and_url_encode(base_string, url_string):
     """
-    Encode the second string `t` using URL encoding, replace spaces with plus signs, and return the combined format.
+    Encode the second string `url_string` using URL encoding, replace spaces with plus signs, and return the combined format.
 
     :param base_string: The first part of the string to be combined.
     :param url_string: The string to be URL encoded and combined.
-    :return: A formatted string combining `n` and the encoded version of `t`.
+    :return: A formatted string combining `base_string` and the encoded version of `url_string`.
     """
     encoded_t = quote(url_string, safe='').replace('%20', '+').replace('(', '%28').replace(')', '%29')
     return f"{base_string}:{encoded_t}"
@@ -157,7 +157,6 @@ class ListingsSpider(scrapy.Spider):
                     print("duplicate", listing_id)
 
             except Exception as e:
-                print("error_listing", result)
                 print("exception", e.args[0])
 
         if len(ListingsSpider.next_page_cursors) != 0:
