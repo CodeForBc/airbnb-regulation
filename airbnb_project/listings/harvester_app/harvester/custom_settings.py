@@ -22,7 +22,7 @@ def get_scrapy_settings():
         # Custom Settings
         'CSV_STORE_FILE_NAME': 'listings.csv',
         'FEEDS': {
-            'new_format1.csv': {'format': 'csv', 'overwrite': False},
+            'listings.csv': {'format': 'csv', 'overwrite': False},
         },
         # Configure item pipelines
         'ITEM_PIPELINES': {
