@@ -12,6 +12,9 @@ ruff = "^0.5.6"
 [tool.poetry.group.dev.dependencies]
 psycopg = "^3.1.19"
 scrapy = "^2.11.2"
+python-dotenv = "^1.0.1"
+django = "^5.0.6"
+
 
 [build-system]
 requires = ["poetry-core"]
