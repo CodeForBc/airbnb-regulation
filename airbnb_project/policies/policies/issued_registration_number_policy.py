@@ -20,6 +20,4 @@ class IssuedRegistrationNumberPolicy(Policy):
         bool: True if the registration number is valid, False otherwise.
     """
     result = self.business_licence_client.get_licence_status(registration_number)
-    if result == "Issued":
-      return True
-    return False
+    return True if result == "Issued" else False
