@@ -2,7 +2,7 @@ import json
 import requests
 import logging
 from urllib3.exceptions import HTTPError
-
+from urllib.parse import urlencode
 class BusinessLicenceClient:
     BASE_URL = "https://opendata.vancouver.ca/api/explore/v2.1/catalog/datasets/business-licences/records"
 
@@ -61,7 +61,9 @@ class BusinessLicenceClient:
             json.JSONDecodeError: If there is an error decoding the JSON response.
         """
         try:
-            response = self.session.get(url=self.BASE_URL, params=params)
+            query_string = urlencode(params, safe='():,')
+            url = f"{self.BASE_URL}?{query_string}"
+            response = self.session.get(url=url)
             # Raises HTTPError, if one occurred
             response.raise_for_status()
             return response.json()
@@ -115,9 +117,7 @@ class BusinessLicenceClient:
         for parameter in parameters:
             for key, value in parameter.items():
                 if key in merged_query_parameter:
-                    merged_query_parameter[key] = " and ".join(
-                        [merged_query_parameter[key], value]
-                    )
+                    merged_query_parameter[key] = f"({merged_query_parameter[key]}) AND ({value})"
                 else:
                     merged_query_parameter[key] = value
         return merged_query_parameter
