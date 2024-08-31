@@ -20,8 +20,7 @@ class TestListingsSpider(unittest.TestCase):
         """
         coordinates = [{"ne_lat": 1.0, "ne_lng": 2.0, "sw_lat": 3.0, "sw_lng": 4.0}]
         requests = self.spider._generate_requests(coordinates)
-        self.assertGreater(len(requests), 0)
-        self.assertIsInstance(requests[0], Request)
+        self.assertTrue(len(requests) > 0 and isinstance(requests[0], Request))
 
     def test_extract_script_json(self):
         """
