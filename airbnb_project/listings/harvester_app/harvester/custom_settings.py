@@ -1,9 +1,14 @@
+import os
+
 """
 Files contains custom settings for the harvester and values related to AirBnB.
 """
 
 
 def get_scrapy_settings():
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    # Construct the absolute path to coordinates.json
+    coordinates_file_path = os.path.join(current_directory, 'spiders/listings.csv')
     settings_dict = {
         # Values related to AirBnb
         'AIRBNB_PUBLIC_API_KEY': "",
@@ -20,9 +25,9 @@ def get_scrapy_settings():
         'DOWNLOAD_DELAY': 0.02,
 
         # Custom Settings
-        'CSV_STORE_FILE_NAME': 'listings.csv',
+        'CSV_STORE_FILE_NAME': coordinates_file_path,
         'FEEDS': {
-            'listings.csv': {'format': 'csv', 'overwrite': False},
+            coordinates_file_path: {'format': 'csv', 'overwrite': False},
         },
         # Configure item pipelines
         'ITEM_PIPELINES': {
