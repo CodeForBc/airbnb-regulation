@@ -1,6 +1,7 @@
 import csv
 import json
 import base64
+import os
 from typing import List, Dict, Any
 
 import scrapy
@@ -125,13 +126,20 @@ class ListingsSpider(scrapy.Spider):
             json.JSONDecodeError: If there's an error decoding the JSON in the file.
         """
         try:
-            with open('coordinates.json', 'r') as file:
+            # Get the absolute path to the current script (listings_spider.py)
+            current_directory = os.path.dirname(os.path.abspath(__file__))
+            # Construct the absolute path to coordinates.json
+            coordinates_file_path = os.path.join(current_directory, 'coordinates.json')
+            with open(coordinates_file_path, 'r') as file:
                 return json.load(file)
         except FileNotFoundError:
             print("Coordinates file not found")
             return []
         except json.JSONDecodeError:
             print("Error decoding JSON in coordinates file")
+            return []
+        except Exception:
+            print("Unknown error occurred while reading the coordinates file")
             return []
 
     def _generate_requests(self, coordinates: List[Dict[str, float]]) -> List[scrapy.FormRequest]:
