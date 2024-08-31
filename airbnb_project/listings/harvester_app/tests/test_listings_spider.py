@@ -1,7 +1,9 @@
 import unittest
+import requests
 from unittest.mock import patch
 from scrapy.http import Request, TextResponse
 from airbnb_project.listings.harvester_app.harvester.spiders.listings_spider import ListingsSpider
+from airbnb_project.listings.harvester_app.harvester.custom_settings import get_scrapy_settings
 
 
 class TestListingsSpider(unittest.TestCase):
@@ -9,6 +11,7 @@ class TestListingsSpider(unittest.TestCase):
     def setUp(self):
         # Initialize a new ListingsSpider instance before each test
         self.spider = ListingsSpider()
+        self.spider.settings = get_scrapy_settings()
 
     def test_generate_requests(self):
         """
@@ -63,7 +66,10 @@ class TestListingsSpider(unittest.TestCase):
         }
         request = self.spider._create_listing_request(listing_data)
         self.assertIsInstance(request, Request)
-        self.assertEqual(request.headers['X-Airbnb-Api-Key'], b'd306zoyjsyarp7ifhu67rjxn52tv0t20')
+        response = requests.get(request.url, headers={'X-Airbnb-Api_Key': request.headers['X-Airbnb-Api-Key']})
+
+        # Check if the status code is 200c`
+        self.assertEqual(response.status_code, 200)
 
     @patch.object(ListingsSpider, '_parse_capacity_and_location')
     @patch.object(ListingsSpider, '_parse_listings_number')
