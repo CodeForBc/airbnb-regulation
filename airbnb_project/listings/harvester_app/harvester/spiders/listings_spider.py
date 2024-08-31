@@ -152,7 +152,7 @@ class ListingsSpider(scrapy.Spider):
         if not coordinates:
             return []
 
-        urls = self.URL_BUILDER.get_urls("july", "june", "august")
+        urls = self.URL_BUILDER.get_urls()
         requests = []
         zoom_level = self.settings.get('ZOOM_LEVEL')
         for url in urls:
