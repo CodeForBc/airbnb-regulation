@@ -1,6 +1,6 @@
 import unittest
 import requests
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from scrapy.http import Request, TextResponse
 from airbnb_project.listings.harvester_app.harvester.spiders.listings_spider import ListingsSpider
 from airbnb_project.listings.harvester_app.harvester.custom_settings import get_scrapy_settings
@@ -50,11 +50,17 @@ class TestListingsSpider(unittest.TestCase):
         self.assertEqual(listing_data["airbnb_listing_id"], "456")
         self.assertEqual(listing_data["title"], "Test Listing")
 
-    def test_create_listing_request(self):
+    @patch('requests.get')
+    def test_create_listing_request(self, mock_get):
         """
         Test that _create_listing_request correctly creates a Request object
         for a listing's details page with the right URL and headers.
         """
+        # Setup mock response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_get.return_value = mock_response
+
         listing_data = {
             "airbnb_listing_id": "789",
             "title": "Test Listing",
@@ -67,7 +73,7 @@ class TestListingsSpider(unittest.TestCase):
         self.assertIsInstance(request, Request)
         response = requests.get(request.url, headers={'X-Airbnb-Api_Key': request.headers['X-Airbnb-Api-Key']})
 
-        # Check if the status code is 200c`
+        # Check if the status code is 200`
         self.assertEqual(response.status_code, 200)
 
     @patch.object(ListingsSpider, '_parse_capacity_and_location')
