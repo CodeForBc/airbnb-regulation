@@ -14,6 +14,3 @@ from .settings import *
 
 # Ensure this setting to indicate it's a test environment
 DEBUG = False  # Set to True or False as per your testing needs
-
-# Ensure this setting to indicate it's a test environment
-DEBUG = False  # Set to True or False as per your testing needs
