@@ -11,10 +11,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from .settings import *
-from dotenv import load_dotenv, find_dotenv
-import os
-
-load_dotenv(find_dotenv())
 
 # Ensure this setting to indicate it's a test environment
 DEBUG = False  # Set to True or False as per your testing needs
