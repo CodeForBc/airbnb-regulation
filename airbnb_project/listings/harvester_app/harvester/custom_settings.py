@@ -8,15 +8,12 @@ Files contains custom settings for the harvester and values related to AirBnB.
 
 
 def get_scrapy_settings():
-    # load the env file
-    config = dotenv_values(".env")
-
-    # get the airbnb api key
-    AIRBNB_PUBLIC_API_KEY = config.get("AIRBNB_PUBLIC_API_KEY", "")
+    # get airbnb public api key for django env
+    AIRBNB_PUBLIC_API_KEY = os.environ['AIRBNB_PUBLIC_API_KEY']
 
     current_directory = os.path.dirname(os.path.abspath(__file__))
     # Construct the absolute path to coordinates.json
-    coordinates_file_path = os.path.join(current_directory, 'spiders/listings.csv')
+    coordinates_file_path = os.path.join(current_directory, 'spiders/listings_django.csv')
     settings_dict = {
         # Values related to AirBnb
         'AIRBNB_PUBLIC_API_KEY': AIRBNB_PUBLIC_API_KEY,
