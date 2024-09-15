@@ -6,7 +6,6 @@
 
 # useful for handling different item types with a single interface
 import re
-import sqlite3
 
 from itemadapter import ItemAdapter
 
