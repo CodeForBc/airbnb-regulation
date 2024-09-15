@@ -3,20 +3,6 @@ from datetime import datetime, timedelta
 """
 Values for the months that are used in the url builder
 """
-AirBnbMonths = [
-    "january",
-    "february",
-    "march",
-    "april",
-    "may",
-    "june",
-    "july",
-    "august",
-    "september",
-    "october",
-    "november",
-    "december",
-]
 
 
 class AirBnbURLBuilder:
@@ -27,6 +13,20 @@ class AirBnbURLBuilder:
     for Vancouver, Canada, including flexible date searches and specific date ranges.
     """
 
+    AirBnbMonths = [
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+    ]
     SCHEME = "https"
     BASE_URL = "www.airbnb.ca"
     HOMES_PATH = "s/Vancouver--Canada/homes"
