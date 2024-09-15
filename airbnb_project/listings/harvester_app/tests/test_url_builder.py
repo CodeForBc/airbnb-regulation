@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from airbnb_project.listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
+from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
 
 
 class TestAirBnbURLBuilder(unittest.TestCase):
