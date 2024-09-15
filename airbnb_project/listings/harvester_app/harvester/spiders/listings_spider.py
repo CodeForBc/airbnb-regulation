@@ -8,11 +8,11 @@ import scrapy
 from scrapy import Request
 from scrapy.crawler import CrawlerProcess
 
-from airbnb_project.listings.harvester_app.harvester.items import ExpandedAirBnBListingItem
+from listings.harvester_app.harvester.items import ExpandedAirBnBListingItem
 from scrapy.http import Response
 from urllib.parse import quote
-from airbnb_project.listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
-from airbnb_project.listings.harvester_app.harvester.custom_settings import get_scrapy_settings
+from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
+from listings.harvester_app.harvester.custom_settings import get_scrapy_settings
 
 
 def base64_encode_string(input_string):
