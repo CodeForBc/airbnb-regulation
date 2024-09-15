@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from twisted.internet import reactor
 from scrapy.crawler import CrawlerRunner
 from listings.harvester_app.harvester.spiders.listings_spider import ListingsSpider
-from listings.harvester_app.harvester.test_settings import get_scrapy_settings
+from listings.harvester_app.harvester.custom_settings import get_scrapy_settings
 
 
 def scrapy_background_process():
