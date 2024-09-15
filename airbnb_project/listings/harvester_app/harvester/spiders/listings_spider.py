@@ -1,14 +1,19 @@
 import csv
 import json
-import random
+import base64
+import os
+from typing import List, Dict, Any
 
 import scrapy
 from scrapy import Request
-from listings.harvester_app.harvester.items import AirBnBListingItem, ExpandedAirBnBListingItem
-from scrapy.http import Response
-import base64
+from scrapy.crawler import CrawlerProcess
 
-from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
+from airbnb_project.listings.harvester_app.harvester.items import ExpandedAirBnBListingItem
+from scrapy.http import Response
+from urllib.parse import quote
+from airbnb_project.listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
+from airbnb_project.listings.harvester_app.harvester.custom_settings import get_scrapy_settings
+
 
 # The tag used to identify the specific script data within the Airbnb HTML page.
 SCRIPT_TAG = "data-deferred-state-0"
@@ -25,29 +30,27 @@ ZOOM_LEVEL = 15.4
 
 
 
-def n(s):
-    """
-    Encode the input string `s` into bytes, then encode it in base64, and decode it back to a UTF-8 string.
 
-    :param s: The input string to be encoded.
+def base64_encode_string(input_string):
+    """
+    Encode the input string `input_string` into bytes, then encode it in base64, and decode it back to a UTF-8 string.
+
+    :param input_string: The input string to be encoded.
     :return: The base64 encoded string.
     """
-    return base64.b64encode(s.encode('utf-8')).decode('utf-8')
+    return base64.b64encode(input_string.encode('utf-8')).decode('utf-8')
 
 
-from urllib.parse import quote
-
-
-def t(n, t):
+def combine_and_url_encode(base_string, url_string):
     """
-    Encode the second string `t` using URL encoding, replace spaces with plus signs, and return the combined format.
+    Encode the second string `url_string` using URL encoding, replace spaces with plus signs, and return the combined format.
 
-    :param n: The first part of the string to be combined.
-    :param t: The string to be URL encoded and combined.
-    :return: A formatted string combining `n` and the encoded version of `t`.
+    :param base_string: The first part of the string to be combined.
+    :param url_string: The string to be URL encoded and combined.
+    :return: A formatted string combining `base_string` and the encoded version of `url_string`.
     """
-    encoded_t = quote(t, safe='').replace('%20', '+').replace('(', '%28').replace(')', '%29')
-    return f"{n}:{encoded_t}"
+    encoded_t = quote(url_string, safe='').replace('%20', '+').replace('(', '%28').replace(')', '%29')
+    return f"{base_string}:{encoded_t}"
 
 
 class ListingsSpider(scrapy.Spider):
@@ -73,109 +76,237 @@ class ListingsSpider(scrapy.Spider):
     # Instance of AirBnbURLBuilder to generate URLs for different search parameters
     URL_BUILDER = AirBnbURLBuilder()
 
-    def start_requests(self):
+    def start_requests(self) -> List[scrapy.FormRequest]:
         """
-       Generates initial requests for scraping Airbnb listings using coordinates from a JSON file.
+        Generate initial requests for scraping Airbnb listings using coordinates from a JSON file.
 
-       This function performs the following steps:
-       1. Reads already scraped Airbnb listing IDs from a CSV file and stores them in a set.
-       2. Reads coordinates from a JSON file and shuffles them.
-       3. Constructs and returns a list of initial Scrapy requests using template URLs and the read coordinates.
+        This method orchestrates the process of loading already scraped listings,
+        loading coordinates, and generating requests based on those coordinates.
 
-       :return: List of Scrapy FormRequest objects initialized with map coordinates for Vancouver.
+        Returns:
+            List[scrapy.FormRequest]: A list of FormRequest objects for initial scraping.
+        """
+        self._load_already_scraped_listings()
+        coordinates = self._load_coordinates()
+        return self._generate_requests(coordinates)
+
+    def _load_already_scraped_listings(self) -> None:
+        """
+        Read already scraped Airbnb listing IDs from a CSV file and store them in a set.
+
+        This method reads a CSV file specified by the 'CSV_STORE_FILE_NAME' setting,
+        extracts the 'airbnb_listing_id' from each row, and adds it to the
+        ALREADY_SCRAPED_LISTINGS set.
+
+        Raises:
+            FileNotFoundError: If the specified CSV file is not found.
         """
         file_name = self.settings.get("CSV_STORE_FILE_NAME")
         try:
-            with open(
-                    f"{file_name}",
-                    "r",
-                    encoding="utf8") as file:
-                read_csv_file = csv.DictReader(file)
-                for row in read_csv_file:
-                    row: dict
-                    ListingsSpider.ALREADY_SCRAPED_LISTINGS.add(row['airbnb_listing_id'])
+            with open(file_name, "r", encoding="utf8") as file:
+                reader = csv.DictReader(file)
+                self.ALREADY_SCRAPED_LISTINGS.update(row['airbnb_listing_id'] for row in reader)
         except FileNotFoundError as e:
-            print(e)
-        requests = []
+            print(f"CSV file not found: {e}")
+
+    def _load_coordinates(self) -> List[Dict[str, float]]:
+        """
+        Read coordinates from a JSON file.
+
+        This method attempts to read and parse a 'coordinates.json' file,
+        which should contain a list of coordinate dictionaries.
+
+        Returns:
+            List[Dict[str, float]]: A list of coordinate dictionaries, where each dictionary
+            contains 'ne_lat', 'ne_lng', 'sw_lat', and 'sw_lng' keys with float values.
+            Returns an empty list if the file is not found or cannot be parsed.
+
+        Raises:
+            FileNotFoundError: If the 'coordinates.json' file is not found.
+            json.JSONDecodeError: If there's an error decoding the JSON in the file.
+        """
         try:
-            with open('cordinates.json', 'r') as file:
-                coordinates = json.load(file)
-                urls = ListingsSpider.URL_BUILDER.get_urls("july", "june", "august")
-                if coordinates is not None:
-                    requests = [scrapy.FormRequest(
-                        url.format(cord["ne_lat"], cord["ne_lng"], cord["sw_lat"], cord["sw_lng"],
-                                   ZOOM_LEVEL,
-                                   ZOOM_LEVEL)) for url in urls for
-                        cord in
-                        coordinates]
+            # Get the absolute path to the current script (listings_spider.py)
+            current_directory = os.path.dirname(os.path.abspath(__file__))
+            # Construct the absolute path to coordinates.json
+            coordinates_file_path = os.path.join(current_directory, 'coordinates.json')
+            with open(coordinates_file_path, 'r') as file:
+                return json.load(file)
         except FileNotFoundError:
-            print("The file was not found")
+            print("Coordinates file not found")
+            return []
         except json.JSONDecodeError:
-            print("Error decoding JSON")
+            print("Error decoding JSON in coordinates file")
+            return []
+        except Exception:
+            print("Unknown error occurred while reading the coordinates file")
+            return []
+
+    def _generate_requests(self, coordinates: List[Dict[str, float]]) -> List[scrapy.FormRequest]:
+        """
+        Construct and return a list of initial Scrapy requests using template URLs and coordinates.
+
+        This method creates FormRequest objects for each combination of URL template
+        (obtained from URL_BUILDER) and coordinate set.
+
+        Args:
+            coordinates (List[Dict[str, float]]): A list of coordinate dictionaries, where each
+                dictionary contains 'ne_lat', 'ne_lng', 'sw_lat', and 'sw_lng' keys with float values.
+
+        Returns:
+            List[scrapy.FormRequest]: A list of FormRequest objects, each initialized with
+            a URL formatted with coordinates and zoom level.
+        """
+        if not coordinates:
+            return []
+
+        urls = self.URL_BUILDER.get_urls()
+        requests = []
+        zoom_level = self.settings.get('ZOOM_LEVEL')
+        for url in urls:
+            for cord in coordinates:
+                formatted_url = url.format(
+                    cord["ne_lat"], cord["ne_lng"], cord["sw_lat"], cord["sw_lng"],
+                    zoom_level, zoom_level
+                )
+                requests.append(scrapy.FormRequest(formatted_url))
+
         return requests
 
-    async def parse(self, response: Response, **kwargs):
+    async def parse(self, response: Response, **kwargs) -> None:
         """
         Parse method for extracting listings from the Airbnb search results page.
+
+        This method orchestrates the parsing process by extracting JSON data from the script tag,
+        processing individual listings, and handling pagination.
+
+        Args:
+            response (Response): The response object from the request.
+            **kwargs: Additional keyword arguments.
+
+        Yields:
+            Request: Requests for individual listing detail pages.
+            Request: Request for the next page of search results, if available.
+        """
+        script_json = self._extract_script_json(response)
+        results = self._parse_listings_json(script_json)
+
+        if self.next_page_cursors is None:
+            self.next_page_cursors = self._get_cursors(script_json)
+
+        async for request in self._process_listings(results):
+            yield request
+
+        async for request in self._handle_pagination(response):
+            yield request
+
+    def _extract_script_json(self, response: Response) -> Dict[str, Any]:
+        """
+        Extract JSON data from the script tag in the response.
 
         Args:
             response (Response): The response object from the request.
 
+        Returns:
+            Dict[str, Any]: The parsed JSON data from the script tag.
+        """
+        script_tag_name = self.settings.get('AIRBNB_SCRIPT_TAG')
+        script_tag = response.css(f'script#{script_tag_name}')
+        script_inner_text = script_tag.css('script::text').get()
+        return json.loads(script_inner_text)
+
+    async def _process_listings(self, results: List[Dict[str, Any]]):
+        """
+        Process each listing in the results.
+
+        This method iterates through the results, extracts data for each listing,
+        and yields a request for each listing's detail page.
+
+        Args:
+            results (List[Dict[str, Any]]): The list of listing results to process.
+
         Yields:
             Request: A request object for each listing's details page.
         """
-        if response.status != 200:
-            return
-        script_tag = response.css(f'script#{SCRIPT_TAG}')
-        script_inner_text = script_tag.css('script::text').get()
-        script_json = json.loads(script_inner_text)
-        results = self._parse_listings_json(script_json)
-        current_url = response.url
-
-        if ListingsSpider.next_page_cursors is None:
-            ListingsSpider.next_page_cursors = self._get_cursors(script_json)
-
         for result in results:
             try:
-                listing = result.get("listing", {})
-                listing_id: str = listing.get("id")
-                print("listing_id", listing_id)
-                title = listing.get("title", "")
-                name = listing.get("name", "")
-                coordinate = listing.get("coordinate", {})
-                latitude = coordinate.get("latitude", "")
-                longitude = coordinate.get("longitude", "")
-                room_type = listing.get("roomTypeCategory", "")
-                page_url = API_CALL.format(n(t("StayListing", listing_id)))
-                airbnb_params = {
-                    "airbnb_listing_id": listing_id,
-                    "title": title,
-                    "name": name,
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "room_type": room_type
-                }
-
-                # A second request is made to get the registration number and other information using the listing_id
-                # which is scarped
-                if listing_id and listing_id not in ListingsSpider.ALREADY_SCRAPED_LISTINGS:
-                    yield Request(url=page_url, callback=self.handle_listing,
-                                  headers={'X-Airbnb-Api-Key': API_KEY},
-                                  meta={'airbnb_params': airbnb_params})
-                else:
-                    print("duplicate", listing_id)
-
+                listing_data = self._extract_listing_data(result)
+                if listing_data:
+                    yield self._create_listing_request(listing_data)
             except Exception as e:
-                print("error_listing", result)
-                print("exception", e.args[0])
+                print(f"Exception processing listing: {e}")
 
-        if len(ListingsSpider.next_page_cursors) != 0:
-            cursor_id = ListingsSpider.next_page_cursors.pop()
-            next_url = f'{current_url}&cursor={cursor_id}'
+    def _extract_listing_data(self, result: Dict[str, Any]) -> Dict[str, Any] | None:
+        """
+        Extract relevant data from a single listing result.
+
+        This method extracts key information from the listing dictionary and checks
+        if the listing has already been scraped.
+
+        Args:
+            result (Dict[str, Any]): The dictionary containing listing information.
+
+        Returns:
+            Dict[str, Any]: A dictionary of extracted listing data, or None if the listing
+            should be skipped.
+        """
+        listing = result.get("listing", {})
+        listing_id: str = listing.get("id")
+
+        if not listing_id or listing_id in self.ALREADY_SCRAPED_LISTINGS:
+            print(f"Duplicate or missing listing ID: {listing_id}")
+            return None
+
+        return {
+            "airbnb_listing_id": listing_id,
+            "title": listing.get("title", ""),
+            "name": listing.get("name", ""),
+            "latitude": listing.get("coordinate", {}).get("latitude", ""),
+            "longitude": listing.get("coordinate", {}).get("longitude", ""),
+            "room_type": listing.get("roomTypeCategory", "")
+        }
+
+    def _create_listing_request(self, listing_data: Dict[str, Any]) -> Request:
+        """
+        Create a request for the listing's details page.
+
+        Args:
+            listing_data (Dict[str, Any]): The extracted data for a single listing.
+
+        Returns:
+            Request: A request object for the listing's details page.
+        """
+        airbnb_api_url = self.settings.get('AIRBNB_LISTING_API_URL')
+        airbnb_api_key = self.settings.get('AIRBNB_PUBLIC_API_KEY')
+        page_url = airbnb_api_url.format(
+            base64_encode_string(combine_and_url_encode("StayListing", listing_data["airbnb_listing_id"])))
+        return Request(
+            url=page_url,
+            callback=self.handle_listing,
+            headers={'X-Airbnb-Api-Key': airbnb_api_key},
+            meta={'airbnb_params': listing_data}
+        )
+
+    async def _handle_pagination(self, response: Response):
+        """
+        Handle pagination for the next page of results.
+
+        This method checks if there are more pages to scrape and yields a request
+        for the next page if available.
+
+        Args:
+            response (Response): The response object from the current request.
+
+        Yields:
+            Request: A request object for the next page of search results, if available.
+        """
+        if self.next_page_cursors:
+            cursor_id = self.next_page_cursors.pop()
+            next_url = f'{response.url}&cursor={cursor_id}'
             yield response.follow(next_url, callback=self.parse)
 
     @staticmethod
-    def handle_listing(response):
+    def handle_listing(response: Response):
         """
         Parse method for extracting details from an Airbnb listing page.
 
@@ -183,7 +314,7 @@ class ListingsSpider(scrapy.Spider):
             response (Response): The response object from the request.
 
          Yields:
-            AirBnBListingItem: An AirBnBListingItem object containing details of an Airbnb listing.
+            ExpandedAirBnBListingItem: An ExpandedAirBnBListingItem object containing details of an Airbnb listing.
         """
         airbnb_params = response.meta.get('airbnb_params', {})
         listing_item = ExpandedAirBnBListingItem(
@@ -194,9 +325,27 @@ class ListingsSpider(scrapy.Spider):
             longitude=airbnb_params.get('longitude'),
             room_type=airbnb_params.get('room_type')
         )
+        try:
+            script_tag_json = json.loads(response.text)
+            ListingsSpider._parse_capacity_and_location(script_tag_json, listing_item)
+            ListingsSpider._parse_listings_number(script_tag_json, listing_item)
+        except Exception as e:
+            print(e)
+        finally:
+            yield listing_item
 
-        script_tag_json = json.loads(response.text)
+    @staticmethod
+    def _parse_capacity_and_location(script_tag_json, listing_item):
+        """
+        Extract the room capacity and location (City) of the listing from the provided JSON data.
 
+        Args:
+            script_tag_json (dict): The JSON data extracted from the script tag containing the listing metadata.
+            listing_item (dict): The dictionary representing a single listing, where parsed data will be stored.
+
+        Returns:
+            None: This method modifies the `listing_item` dictionary in place, adding 'location' and 'person_capacity'.
+        """
         location = ""
         person_capacity = ""
         try:
@@ -205,11 +354,24 @@ class ListingsSpider(scrapy.Spider):
                 sharing_config = metadata.get("sharingConfig", {})
                 location = sharing_config.get("location", "")
                 person_capacity = sharing_config.get("personCapacity", "")
-
         except Exception as e:
             print(e)
-        listing_item['location'] = location
-        listing_item['person_capacity'] = person_capacity
+        finally:
+            listing_item['location'] = location
+            listing_item['person_capacity'] = person_capacity
+
+    @staticmethod
+    def _parse_listings_number(script_tag_json, listing_item):
+        """
+        Extract the registration number, number of beds, and number of baths from the provided JSON data.
+
+        Args:
+            script_tag_json (dict): The JSON data extracted from the script tag containing the listing details.
+            listing_item (dict): The dictionary representing a single listing, where parsed data will be stored.
+
+        Returns:
+            None: This method modifies the `listing_item` dictionary in place, adding 'registration_number', 'beds', and 'baths_text'.
+        """
         registration_number = ""
         number_of_beds = ""
         number_of_baths = ""
@@ -233,11 +395,10 @@ class ListingsSpider(scrapy.Spider):
                             number_of_baths = title
         except Exception as e:
             print("Exception occurred:", e)
-
-        listing_item["beds"] = number_of_beds
-        listing_item["baths_text"] = number_of_baths
-        listing_item["registration_number"] = registration_number
-        yield listing_item
+        finally:
+            listing_item["beds"] = number_of_beds
+            listing_item["baths_text"] = number_of_baths
+            listing_item["registration_number"] = registration_number
 
     @staticmethod
     def _safe_get(data: dict, *keys, default=None):
@@ -310,3 +471,21 @@ class ListingsSpider(scrapy.Spider):
         return ListingsSpider._safe_get(script_json,
                                         "niobeMinimalClientData", 0, 1, "data", "presentation", "staysSearch",
                                         "results", "paginationInfo", "pageCursors", default=[])
+
+
+def main():
+    # Get the project settings
+    settings = get_scrapy_settings()
+
+    # Create a CrawlerProcess with the project settings
+    process = CrawlerProcess(settings)
+
+    # Add the spider to the CrawlerProcess
+    process.crawl(ListingsSpider)
+
+    # Start the crawling process
+    process.start()
+
+
+if __name__ == '__main__':
+    main()
