@@ -1,4 +1,5 @@
 import unittest
+import calendar
 from datetime import datetime
 from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
 
@@ -70,9 +71,18 @@ class TestAirBnbURLBuilder(unittest.TestCase):
 
     def test_get_current_months(self):
         # Test the method that returns the current and next two months
-        current_months = ("august", "september", "october")
+        # Get the current month
+        current_month = datetime.now().month
+
+        # Get the names of the current month and the next two months
+        current_months = []
+        for i in range(3):  # Loop through the current and next two months
+            month_number = (current_month + i - 1) % 12 + 1  # Handles wrapping around the end of the year
+            current_months.append(calendar.month_name[month_number].lower())
+
+        # Call the method you're testing
         get_months = self.builder._get_current_months()
-        self.assertEqual(current_months, get_months)
+        self.assertEqual(tuple(current_months), get_months)
 
 
 if __name__ == '__main__':
