@@ -23,8 +23,8 @@ def get_scrapy_settings():
 
         # Harvester settings
         'BOT_NAME': 'harvester',
-        'SPIDER_MODULES': ['airbnb_project.listings.harvester_app.harvester.spiders'],
-        'NEWSPIDER_MODULE': 'airbnb_project.listings.harvester_app.harvester.spiders',
+        'SPIDER_MODULES': ['listings.harvester_app.harvester.spiders'],
+        'NEWSPIDER_MODULE': 'listings.harvester_app.harvester.spiders',
 
         'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
         'DOWNLOAD_DELAY': 0.02,
@@ -36,7 +36,7 @@ def get_scrapy_settings():
         },
         # Configure item pipelines
         'ITEM_PIPELINES': {
-            'airbnb_project.listings.harvester_app.harvester.pipelines.AirbnbListingsPipelineDataCleaner': 400,
+            'listings.harvester_app.harvester.pipelines.AirbnbListingsPipelineDataCleaner': 400,
         },
 
         # Set settings whose default value is deprecated to a future-proof value
