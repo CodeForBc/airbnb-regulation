@@ -8,6 +8,7 @@ This project includes a Django API endpoint that triggers a listings collections
 1. Have python3 installed
 2. Have all the poetry dependencies installed
 3. Have postgres server running
+4. Add the `AirBnBAPI_KEY` in the `.env` file
 
 ## Running the Server
 
