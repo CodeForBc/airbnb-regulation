@@ -20,5 +20,4 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('listings/', include('listings.urls'))
-    # path("scrape-airbnb-listings/", scrape_hacker_news, name="scrape_hacker_news"),
 ]
