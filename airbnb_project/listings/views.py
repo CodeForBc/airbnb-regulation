@@ -14,6 +14,6 @@ def scrapy_background_process():
     print("Scrapy process done")
 
 
-def scrape_listings(request):
+def harvest_listings(request):
     scrapy_background_process()
     return HttpResponse("process started")
