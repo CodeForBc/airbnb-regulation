@@ -17,7 +17,7 @@ class HarvestListingsTest(TestCase):
         mock_thread.return_value = mock_thread_instance
 
         # Make a POST request to the harvest_listings view
-        response = self.client.post(reverse('harvest_listings'))
+        response = self.client.get(reverse('harvest_listings'))
 
         # Check that a new thread was started
         mock_thread.assert_called_once()
@@ -36,7 +36,7 @@ class HarvestListingsTest(TestCase):
         mock_reactor.running = True  # Simulate reactor already running
 
         # Make a POST request to the harvest_listings view
-        response = self.client.post(reverse('harvest_listings'))
+        response = self.client.get(reverse('harvest_listings'))
 
         # Validate response status code and content
         self.assertEqual(response.status_code, 409)
@@ -50,7 +50,7 @@ class HarvestListingsTest(TestCase):
         mock_reactor.running = False
         # Force an exception to simulate failure
         with patch('listings.views.CrawlerRunner', side_effect=Exception("Crawler error")):
-            response = self.client.post(reverse('harvest_listings'))
+            response = self.client.get(reverse('harvest_listings'))
 
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.content.decode(), "Failed to start harvesting process")

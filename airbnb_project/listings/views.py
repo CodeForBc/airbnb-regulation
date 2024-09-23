@@ -36,7 +36,7 @@ def run_spider_in_thread(runner):
     except Exception as e:
         logger.error(f"Error in Scrapy process: {str(e)}")
 
-@require_http_methods(["POST"])
+@require_http_methods(["GET"])
 def harvest_listings(request):
     """
     Django view to initiate the harvesting process.
