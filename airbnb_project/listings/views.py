@@ -4,12 +4,13 @@ from twisted.internet import reactor
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
 from listings.harvester_app.harvester.spiders.listings_spider import ListingsSpider
-from listings.harvester_app.harvester.custom_settings import get_scrapy_settings
+from listings.harvester_app.harvester.harvester_settings import get_harvester_settings
 from threading import Thread
 import logging
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
+
 
 def run_spider_in_thread(runner):
     """
@@ -36,6 +37,7 @@ def run_spider_in_thread(runner):
     except Exception as e:
         logger.error(f"Error in Scrapy process: {str(e)}")
 
+
 @require_http_methods(["GET"])
 def harvest_listings(request):
     """
@@ -56,7 +58,7 @@ def harvest_listings(request):
             # Configure Scrapy logging
             configure_logging()
             # Set up the Scrapy crawler with custom settings
-            runner = CrawlerRunner(settings=get_scrapy_settings())
+            runner = CrawlerRunner(settings=get_harvester_settings())
             # Start the spider in a new thread
             thread = Thread(target=run_spider_in_thread, args=(runner,))
             thread.start()

@@ -1,13 +1,11 @@
 import os
 
-from dotenv import dotenv_values
-
 """
 Files contains custom settings for the harvester and values related to AirBnB.
 """
 
 
-def get_scrapy_settings():
+def get_harvester_settings():
     # get airbnb public api key for django env
     AIRBNB_PUBLIC_API_KEY = os.environ['AIRBNB_PUBLIC_API_KEY']
 
@@ -25,7 +23,6 @@ def get_scrapy_settings():
         'BOT_NAME': 'harvester',
         'SPIDER_MODULES': ['listings.harvester_app.harvester.spiders'],
         'NEWSPIDER_MODULE': 'listings.harvester_app.harvester.spiders',
-
         'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
         'DOWNLOAD_DELAY': 0.02,
 

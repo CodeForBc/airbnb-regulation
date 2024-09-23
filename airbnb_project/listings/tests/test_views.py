@@ -16,7 +16,7 @@ class HarvestListingsTest(TestCase):
         mock_thread_instance = MagicMock()  # Create a mock thread instance
         mock_thread.return_value = mock_thread_instance
 
-        # Make a POST request to the harvest_listings view
+        # Make a GET request to the harvest_listings view
         response = self.client.get(reverse('harvest_listings'))
 
         # Check that a new thread was started
@@ -35,7 +35,7 @@ class HarvestListingsTest(TestCase):
         """
         mock_reactor.running = True  # Simulate reactor already running
 
-        # Make a POST request to the harvest_listings view
+        # Make a GET request to the harvest_listings view
         response = self.client.get(reverse('harvest_listings'))
 
         # Validate response status code and content

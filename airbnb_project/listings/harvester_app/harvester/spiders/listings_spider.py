@@ -12,7 +12,7 @@ from listings.harvester_app.harvester.items import ExpandedAirBnBListingItem
 from scrapy.http import Response
 from urllib.parse import quote
 from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
-from listings.harvester_app.harvester.custom_settings import get_scrapy_settings
+from listings.harvester_app.harvester.harvester_settings import get_harvester_settings
 
 
 def base64_encode_string(input_string):

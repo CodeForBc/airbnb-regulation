@@ -36,7 +36,7 @@ This endpoint starts the harvesting process.
 ## How to Trigger the View
 
 You can trigger the harvesting process by sending a GET request to the `listings/harvest-listings/` endpoint.  
-The harvested listings will be saved in `listings_djando.csv` in `harvester_app/harvester/spiders/`.
+The harvested listings will be saved in `listings_django.csv` in `harvester_app/harvester/spiders/`.
 
 ## Testing
 
