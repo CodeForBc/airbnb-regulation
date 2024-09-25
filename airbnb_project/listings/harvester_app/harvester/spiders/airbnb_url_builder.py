@@ -3,20 +3,6 @@ from datetime import datetime, timedelta
 """
 Values for the months that are used in the url builder
 """
-AirBnbMonths = [
-    "january",
-    "february",
-    "march",
-    "april",
-    "may",
-    "june",
-    "july",
-    "august",
-    "september",
-    "october",
-    "november",
-    "december",
-]
 
 
 class AirBnbURLBuilder:
@@ -26,7 +12,20 @@ class AirBnbURLBuilder:
     This class provides methods to generate various types of AirBnb search URLs
     for Vancouver, Canada, including flexible date searches and specific date ranges.
     """
-
+    AirBnbMonths = [
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+    ]
     SCHEME = "https"
     BASE_URL = "www.airbnb.ca"
     HOMES_PATH = "s/Vancouver--Canada/homes"
@@ -194,12 +193,12 @@ class AirBnbURLBuilder:
         # Ensure number_of_months is at most 12
         number_of_months = min(number_of_months, 12)
         current_month = datetime.now().month - 1
-        end_month = (current_month + number_of_months) % len(AirBnbMonths)
+        end_month = (current_month + number_of_months) % len(AirBnbURLBuilder.AirBnbMonths)
         if end_month > current_month:
-            return tuple(AirBnbMonths[current_month:end_month])
+            return tuple(AirBnbURLBuilder.AirBnbMonths[current_month:end_month])
         else:
             # Wrap around
-            return tuple(AirBnbMonths[current_month:] + AirBnbMonths[:end_month])
+            return tuple(AirBnbURLBuilder.AirBnbMonths[current_month:] + AirBnbURLBuilder.AirBnbMonths[:end_month])
 
     def get_date(self, start_date=None, time_delta=5):
         """

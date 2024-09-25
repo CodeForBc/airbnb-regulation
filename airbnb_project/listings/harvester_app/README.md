@@ -43,7 +43,7 @@ This project is structured to scrape Airbnb listings data. Here's a brief overvi
 ## Setup and Installation
 
 1. Follow the root `README.md` to install any dependencies required.
-2. Add the airbnb API key in `custom_settings.py` for the `AIRBNB_PUBLIC_API_KEY` key. 
+2. Add the airbnb API key in `harvester_settings.py` for the `AIRBNB_PUBLIC_API_KEY` key. 
 
 ## Usage
 

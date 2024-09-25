@@ -8,27 +8,11 @@ import scrapy
 from scrapy import Request
 from scrapy.crawler import CrawlerProcess
 
-from airbnb_project.listings.harvester_app.harvester.items import ExpandedAirBnBListingItem
+from listings.harvester_app.harvester.items import ExpandedAirBnBListingItem
 from scrapy.http import Response
 from urllib.parse import quote
-from airbnb_project.listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
-from airbnb_project.listings.harvester_app.harvester.custom_settings import get_scrapy_settings
-
-
-# The tag used to identify the specific script data within the Airbnb HTML page.
-SCRIPT_TAG = "data-deferred-state-0"
-
-# API endpoint for retrieving detailed information about specific Airbnb listings.
-# The URL requires an Airbnb listing ID to be inserted into the placeholder.
-API_CALL = "https://www.airbnb.ca/api/v3/StaysPdpSections/08e3ad2e3d75c9bede923485718ff2e7f6efe2ca1febb5192d78c51e17e8b4ca?operationName=StaysPdpSections&locale=en-CA&currency=CAD&variables=%7B%22id%22%3A%22{}%22%2C%22pdpSectionsRequest%22%3A%7B%22adults%22%3A%221%22%2C%22layouts%22%3A%5B%22SINGLE_COLUMN%22%5D%7D%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%2237d7cbb631196506c3990783fe194d81432d0fbf7362c668e547bb6475e71b37%22%7D%7D"
-
-# API key used for authentication when making API calls to Airbnb's services.
-API_KEY = "d306zoyjsyarp7ifhu67rjxn52tv0t20"
-
-# Zoom level parameter used in the map URL templates to define the zoom level of the map.
-ZOOM_LEVEL = 15.4
-
-
+from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
+from listings.harvester_app.harvester.harvester_settings import get_harvester_settings
 
 
 def base64_encode_string(input_string):
@@ -471,21 +455,3 @@ class ListingsSpider(scrapy.Spider):
         return ListingsSpider._safe_get(script_json,
                                         "niobeMinimalClientData", 0, 1, "data", "presentation", "staysSearch",
                                         "results", "paginationInfo", "pageCursors", default=[])
-
-
-def main():
-    # Get the project settings
-    settings = get_scrapy_settings()
-
-    # Create a CrawlerProcess with the project settings
-    process = CrawlerProcess(settings)
-
-    # Add the spider to the CrawlerProcess
-    process.crawl(ListingsSpider)
-
-    # Start the crawling process
-    process.start()
-
-
-if __name__ == '__main__':
-    main()

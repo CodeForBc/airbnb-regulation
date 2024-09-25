@@ -2,8 +2,8 @@ import unittest
 import requests
 from unittest.mock import patch, Mock
 from scrapy.http import Request, TextResponse
-from airbnb_project.listings.harvester_app.harvester.spiders.listings_spider import ListingsSpider
-from airbnb_project.listings.harvester_app.harvester.custom_settings import get_scrapy_settings
+from listings.harvester_app.harvester.spiders.listings_spider import ListingsSpider
+from listings.harvester_app.harvester.harvester_settings import get_harvester_settings
 
 
 class TestListingsSpider(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestListingsSpider(unittest.TestCase):
     def setUp(self):
         # Initialize a new ListingsSpider instance before each test
         self.spider = ListingsSpider()
-        self.spider.settings = get_scrapy_settings()
+        self.spider.settings = get_harvester_settings()
 
     def test_generate_requests(self):
         """
