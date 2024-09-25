@@ -455,21 +455,3 @@ class ListingsSpider(scrapy.Spider):
         return ListingsSpider._safe_get(script_json,
                                         "niobeMinimalClientData", 0, 1, "data", "presentation", "staysSearch",
                                         "results", "paginationInfo", "pageCursors", default=[])
-
-
-def main():
-    # Get the project settings
-    settings = get_scrapy_settings()
-
-    # Create a CrawlerProcess with the project settings
-    process = CrawlerProcess(settings)
-
-    # Add the spider to the CrawlerProcess
-    process.crawl(ListingsSpider)
-
-    # Start the crawling process
-    process.start()
-
-
-if __name__ == '__main__':
-    main()
