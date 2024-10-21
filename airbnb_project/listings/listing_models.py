@@ -1,16 +1,20 @@
 from django.db import models
 
 class Listing(models.Model):
-  name = models.CharField(max_length=100)
-  baths = models.CharField(max_length=10)
-  beds = models.CharField(max_length=10)
-  latitude = models.CharField(max_length=20)
-  location = models.CharField(max_length=20)
-  longitude = models.CharField(max_length=20)
-  person_capacity = models.CharField(max_length=20)
-  registration_number = models.CharField(max_length=20)
-  room_type = models.CharField(max_length=20)
-  title = models.CharField(max_length=100)
+    airbnb_listing_id = models.TextField()
+    name = models.TextField(null=True, blank=True)
+    baths = models.TextField(null=True, blank=True)
+    beds = models.TextField(null=True, blank=True)
+    latitude = models.TextField(null=True, blank=True)
+    location = models.TextField(null=True, blank=True)
+    longitude = models.TextField(null=True, blank=True)
+    person_capacity = models.TextField(null=True, blank=True)
+    registration_number = models.TextField(null=True, blank=True)
+    room_type = models.TextField(null=True, blank=True)
+    title = models.TextField(null=True, blank=True)
+    is_bath_shared = models.BooleanField(null=True, blank=True)
+    baths_text = models.TextField(null=True, blank=True)
 
-  def __str__(self):
-    return self.name
+
+    def __str__(self):
+        return self.name
