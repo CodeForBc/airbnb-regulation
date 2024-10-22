@@ -21,10 +21,10 @@ services:
       timeout: 10s
       retries: 5
   policies:
-    build: .
+    build: ./airbnb_project/airbnb_project/policies
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - .:/code
+      - ./airbnb_project:/code
     ports:
       - "8000:8000"
     environment:
