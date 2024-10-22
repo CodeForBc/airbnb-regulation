@@ -129,10 +129,10 @@ class DjangoORMPipeline:
                 )
                 # Save the listing to the database
                 listing.save()
-                spider.logger.info(f"New listing {item.get('listing_id')} saved to the database.")
+                spider.logger.info(f"New listing {item.get('airbnb_listing_id')} saved to the database.")
             else:
                 # Log if the listing already exists and is skipped
-                spider.logger.info(f"Listing {item.get('listing_id')} already exists, skipping.")
+                spider.logger.info(f"Listing {item.get('airbnb_listing_id')} already exists, skipping.")
         except IntegrityError as e:
             spider.logger.error(f"Failed to save listing {item.get('name')} to the database: {e}")
 
