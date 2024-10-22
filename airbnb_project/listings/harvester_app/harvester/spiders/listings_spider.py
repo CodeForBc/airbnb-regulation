@@ -12,7 +12,6 @@ from listings.harvester_app.harvester.items import ExpandedAirBnBListingItem
 from scrapy.http import Response
 from urllib.parse import quote
 from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
-from listings.harvester_app.harvester.harvester_settings import get_harvester_settings
 
 
 def base64_encode_string(input_string):
@@ -53,10 +52,6 @@ class ListingsSpider(scrapy.Spider):
     # Counter to keep track of the total number of listings scraped
     total_listings = 0
 
-    # Set to store IDs of listings that have already been scraped to avoid duplicates. This is a
-    # temporary solution until a database is set up, which will then take care of duplicates etc
-    ALREADY_SCRAPED_LISTINGS = set()
-
     # Instance of AirBnbURLBuilder to generate URLs for different search parameters
     URL_BUILDER = AirBnbURLBuilder()
 
@@ -70,28 +65,8 @@ class ListingsSpider(scrapy.Spider):
         Returns:
             List[scrapy.FormRequest]: A list of FormRequest objects for initial scraping.
         """
-        self._load_already_scraped_listings()
         coordinates = self._load_coordinates()
         return self._generate_requests(coordinates)
-
-    def _load_already_scraped_listings(self) -> None:
-        """
-        Read already scraped Airbnb listing IDs from a CSV file and store them in a set.
-
-        This method reads a CSV file specified by the 'CSV_STORE_FILE_NAME' setting,
-        extracts the 'airbnb_listing_id' from each row, and adds it to the
-        ALREADY_SCRAPED_LISTINGS set.
-
-        Raises:
-            FileNotFoundError: If the specified CSV file is not found.
-        """
-        file_name = self.settings.get("CSV_STORE_FILE_NAME")
-        try:
-            with open(file_name, "r", encoding="utf8") as file:
-                reader = csv.DictReader(file)
-                self.ALREADY_SCRAPED_LISTINGS.update(row['airbnb_listing_id'] for row in reader)
-        except FileNotFoundError as e:
-            print(f"CSV file not found: {e}")
 
     def _load_coordinates(self) -> List[Dict[str, float]]:
         """
@@ -237,8 +212,8 @@ class ListingsSpider(scrapy.Spider):
         listing = result.get("listing", {})
         listing_id: str = listing.get("id")
 
-        if not listing_id or listing_id in self.ALREADY_SCRAPED_LISTINGS:
-            print(f"Duplicate or missing listing ID: {listing_id}")
+        if not listing_id:
+            print(f"Missing listing ID: {listing_id}")
             return None
 
         return {
