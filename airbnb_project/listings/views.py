@@ -11,29 +11,39 @@ import logging
 # Set up logger for this module
 logger = logging.getLogger(__name__)
 
+# Global flag to track if the spider is currently running
+is_scraping = False
+
+
+def handle_spider_completion():
+    """
+    Handle actions to perform when the spider completes crawling.
+    """
+    global is_scraping
+    is_scraping = False
+    logger.info("Scrapy crawl completed and flag reset.")
+    logger.info("Scrapy process completed successfully")
+
 
 def run_spider_in_thread(runner):
     """
     Run the Scrapy spider in a separate thread.
-
-    This function is designed to be run in a separate thread to avoid
-    blocking the main Django process. It handles the Scrapy crawling
-    process and manages the reactor.
-
-    Args:
-        runner (CrawlerRunner): The configured Scrapy crawler runner.
-
-    Returns:
-        None
     """
+    global is_scraping
     try:
+        # Set the flag to indicate that scraping is in progress
+        is_scraping = True
+
         # Start the crawling process
         deferred = runner.crawl(ListingsSpider)
-        # Add a callback to stop the reactor when crawling is finished
-        deferred.addBoth(lambda _: reactor.stop())
+
+        # Add a callback to reset is_scraping to False and log the completion
+        deferred.addBoth(lambda _: handle_spider_completion())
+
         # Run the reactor (Twisted's event loop)
-        reactor.run(installSignalHandlers=False)
-        logger.info("Scrapy process completed successfully")
+        if not reactor.running:
+            reactor.run(installSignalHandlers=False)
+
     except Exception as e:
         logger.error(f"Error in Scrapy process: {str(e)}")
 
@@ -42,23 +52,17 @@ def run_spider_in_thread(runner):
 def harvest_listings(request):
     """
     Django view to initiate the harvesting process.
-
-    This view starts a Scrapy spider to harvest listings. It ensures that
-    only one harvesting process runs at a time and handles various error
-    scenarios.
-
-    Args:
-        request (HttpRequest): The incoming request object.
-
-    Returns:
-        HttpResponse: A response indicating the status of the harvesting process.
     """
+    global is_scraping
+    print("harvesting_listing", is_scraping)
     try:
-        if not reactor.running:
+        if not is_scraping:
             # Configure Scrapy logging
             configure_logging()
+
             # Set up the Scrapy crawler with custom settings
             runner = CrawlerRunner(settings=get_harvester_settings())
+
             # Start the spider in a new thread
             thread = Thread(target=run_spider_in_thread, args=(runner,))
             thread.start()
