@@ -1,7 +1,7 @@
 from django.db import models
 
 class Listing(models.Model):
-    airbnb_listing_id = models.TextField()
+    airbnb_listing_id = models.TextField(blank=False, null=False)
     name = models.TextField(null=True, blank=True)
     baths = models.TextField(null=True, blank=True)
     beds = models.TextField(null=True, blank=True)
@@ -14,7 +14,6 @@ class Listing(models.Model):
     title = models.TextField(null=True, blank=True)
     is_bath_shared = models.BooleanField(null=True, blank=True)
     baths_text = models.TextField(null=True, blank=True)
-
 
     def __str__(self):
         return self.name
