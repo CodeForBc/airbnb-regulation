@@ -1,64 +1,106 @@
-# Harvest Listings API
+# Airbnb Listings Harvester API
 
-This project includes a Django API endpoint that triggers a listings collections process using Scrapy. The view (
-`harvest_listings`) allows users to start the scraping process via a get request.
-
+A Django API service that harvests Airbnb listings data using Scrapy. 
 ## Prerequisites
 
-1. Have python3 installed
-2. Have all the poetry dependencies installed
-3. Have postgres server running
-4. Add the `AirBnBAPI_KEY` in the `.env` file
+- Python 3.x
+- Poetry for dependency management
+- Docker and Docker Compose (for database)
 
-## Running the Server
+## Setup
 
-1. **Start the Django Development Server**:
+### 1. Environment Configuration
 
-    ```bash
-    python manage.py runserver
-    ```
+Create a `.env` file in the `airbnb_project` folder with the following variables:
 
-   This will start the server on `http://127.0.0.1:8000/`.
+```env
+SECRET_KEY=your_secret_key
+DJANGO_DEBUG=True
+AIRBNB_PUBLIC_API_KEY=d306zoyjsyarp7ifhu67rjxn52tv0t20
+POSTGRES_PASSWORD=your_password
+POSTGRES_USER=your_username
+POSTGRES_DB=your_db_name
+POSTGRES_HOST_PORT=5432
+```
 
-## Endpoint Details
+### 2. Database Setup
 
-### `GET /harvest-listings/`
+Start the PostgreSQL database using Docker:
 
-This endpoint starts the harvesting process.
+```bash
+docker-compose up -d
+```
 
-- **URL**: `listings/harvest-listings/`
+### 3. Database Migrations
+
+Run the following commands to set up the database schema:
+
+```bash
+python manage.py makemigrations listings
+python manage.py migrate listings
+```
+
+### 4. Dependencies Installation
+
+Install required dependencies using Poetry:
+
+```bash
+poetry install
+```
+
+## Running the Application
+
+Start the Django development server:
+
+```bash
+python manage.py runserver
+```
+
+The server will be available at `http://127.0.0.1:8000/`.
+
+## API Documentation
+
+### Harvest Listings Endpoint
+
+Triggers the Airbnb listings harvesting process.
+
+- **URL**: `/listings/harvest-listings/`
 - **Method**: `GET`
-- **Status Codes**:
-    - `200`: Harvesting process started successfully.
-    - `409`: A harvesting process is already running.
-    - `500`: Failed to start the harvesting process due to an internal error.
+- **Success Response**:
+  - **Code**: 200
+  - **Content**: Harvesting process started successfully
+- **Error Responses**:
+  - **Code**: 409
+    - **Content**: A harvesting process is already running
+  - **Code**: 500
+    - **Content**: Internal server error during harvest initiation
 
-## How to Trigger the View
-
-You can trigger the harvesting process by sending a GET request to the `listings/harvest-listings/` endpoint.  
-The harvested listings will be saved in `listings_django.csv` in `harvester_app/harvester/spiders/`.
+Example usage with curl:
+```bash
+curl http://127.0.0.1:8000/listings/harvest-listings/
+```
 
 ## Testing
 
-To the run tests for the listings modules:
+Run the tests using:
 
-```sh
+```bash
 python manage.py test listings
 ```
 
-Example output when all tests passed:
+### Expected Test Output
+
+A successful test run should show output similar to:
 
 ```text
-Found 18 test(s).
+Found 21 test(s).
 Creating test database for alias 'default'...
 System check identified no issues (0 silenced).
-.2024-09-19 16:27:16 [listings.views] ERROR: Failed to start harvesting process: Crawler error
-2024-09-19 16:27:16 [django.request] ERROR: Internal Server Error: /listings/harvest-listings/
-........regis 123456
-.........
+.......................
+
 ----------------------------------------------------------------------
-Ran 18 tests in 0.016s
+Ran 21 tests in 0.077s
 
 OK
-
+Destroying test database for alias 'default'...
 ```
