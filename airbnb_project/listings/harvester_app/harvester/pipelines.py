@@ -7,6 +7,7 @@
 # useful for handling different item types with a single interface
 import re
 
+from django.core.exceptions import ValidationError
 from itemadapter import ItemAdapter
 from listings.listing_models import Listing
 from django.db.utils import IntegrityError
@@ -108,12 +109,18 @@ class AirbnbListingsPipelineDataCleaner:
 
 class DjangoORMPipeline:
     def process_item(self, item, spider):
+        airbnb_listing_id = item.get('airbnb_listing_id', '')
+
+        # Early return if no valid airbnb_listing_id
+        if not airbnb_listing_id:
+            spider.logger.error("Missing required airbnb_listing_id, skipping item")
+            return item
         try:
             # Check if the listing already exists
-            if not Listing.objects.filter(airbnb_listing_id=item.get('airbnb_listing_id', '')).exists():
+            if not Listing.objects.filter(airbnb_listing_id=item.get('airbnb_listing_id')).exists():
                 # Create and save the new listing if it doesn't exist
                 listing = Listing(
-                    airbnb_listing_id=item.get('airbnb_listing_id', ''),
+                    airbnb_listing_id=item.get('airbnb_listing_id'),
                     name=item.get('name', ''),
                     title=item.get('title', ''),
                     baths=item.get('baths', ''),
@@ -134,6 +141,8 @@ class DjangoORMPipeline:
                 # Log if the listing already exists and is skipped
                 spider.logger.info(f"Listing {item.get('airbnb_listing_id')} already exists, skipping.")
         except IntegrityError as e:
+            spider.logger.error(f"Failed to save listing {item.get('name')} to the database: {e}")
+        except Exception as e:
             spider.logger.error(f"Failed to save listing {item.get('name')} to the database: {e}")
 
         return item
