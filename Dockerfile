@@ -6,7 +6,7 @@
 # Sets up all our shared environment variables
 ################################
 # Use an official Python runtime as a parent image
-FROM python:3.10-slim as python-base
+FROM python:3.10-slim AS python-base
 
 # Set poetry version as ARG to minimize build time
 ARG POETRY_VERSION=1.8.4
@@ -20,13 +20,12 @@ ENV PYTHONUNBUFFERED=1 \
 # Create and activate virtual environment
 ENV VIRTUAL_ENV=/app/.venv
 RUN python -m venv "$VIRTUAL_ENV"
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 ################################
 # BUILDER-BASE
 # Used to build dependencies + create virtual environment
 ################################
-FROM python-base as builder-base
+FROM python-base AS builder-base
 
 # Install system dependencies
 RUN apt-get update && \
@@ -66,19 +65,12 @@ RUN poetry install --no-root --with dev && \
 # DEVELOPMENT
 # Image used during development / testing
 ################################
-FROM python-base as dev-base
+FROM python-base AS dev-base
 
 WORKDIR /app
 
 # Copy virtual environment from builder
 COPY --from=builder-base ${VIRTUAL_ENV} ${VIRTUAL_ENV}
-# COPY --from=builder-base /app/poetry.lock /app/poetry.lock
-# COPY --from=builder-base /app/pyproject.toml /app/pyproject.toml
-
-ENV VIRTUAL_ENV=/app/.venv
-ENV PATH="/app/.venv/bin:$PATH"
-# Set PYTHONPATH to ensure Python can locate Django and other dependencies
-ENV PYTHONPATH="/app/airbnb_project:$PYTHONPATH"
 
 # Copy project
 COPY . .
