@@ -16,7 +16,7 @@ Create a `.env` file in the `airbnb_project` folder with the following variables
 ```env
 SECRET_KEY=your_secret_key
 DJANGO_DEBUG=True
-AIRBNB_PUBLIC_API_KEY=d306zoyjsyarp7ifhu67rjxn52tv0t20
+AIRBNB_PUBLIC_API_KEY=
 POSTGRES_PASSWORD=your_password
 POSTGRES_USER=your_username
 POSTGRES_DB=your_db_name
@@ -67,15 +67,16 @@ Triggers the Airbnb listings harvesting process.
 - **URL**: `/listings/harvest-listings/`
 - **Method**: `GET`
 - **Success Response**:
-  - **Code**: 200
-  - **Content**: Harvesting process started successfully
+    - **Code**: 200
+    - **Content**: Harvesting process started successfully
 - **Error Responses**:
-  - **Code**: 409
-    - **Content**: A harvesting process is already running
-  - **Code**: 500
-    - **Content**: Internal server error during harvest initiation
+    - **Code**: 409
+        - **Content**: A harvesting process is already running
+    - **Code**: 500
+        - **Content**: Internal server error during harvest initiation
 
 Example usage with curl:
+
 ```bash
 curl http://127.0.0.1:8000/listings/harvest-listings/
 ```
