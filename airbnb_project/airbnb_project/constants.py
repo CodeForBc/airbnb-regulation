@@ -1,9 +1,6 @@
 import os
 from dotenv import load_dotenv, find_dotenv
 
-import os
-from dotenv import load_dotenv, find_dotenv
-
 # Load environment variables from a .env file
 load_dotenv(find_dotenv())
 
@@ -43,4 +40,3 @@ ENV_VARIABLES: dict[str, str] = {
     'POSTGRES_HOST': get_env_variable('POSTGRES_HOST'),
     'POSTGRES_PORT': get_env_variable('POSTGRES_PORT'),
 }
-
