@@ -2,8 +2,7 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-
-
+import json
 # useful for handling different item types with a single interface
 import re
 
@@ -117,6 +116,7 @@ class DjangoORMPipeline:
        includes error handling for database integrity issues and logging capabilities
        for monitoring the data processing flow.
     """
+
     def process_item(self, item, spider):
         """
         Process a scraped item and store it in the database if valid and unique.
@@ -149,7 +149,7 @@ class DjangoORMPipeline:
 
         # Early return if no valid airbnb_listing_id
         if not airbnb_listing_id:
-            spider.logger.error("Missing required airbnb_listing_id, skipping item")
+            spider.logger.error(f"Missing required airbnb_listing_id, skipping item, item Details\n{json.dumps(item)}")
             return item
         try:
             # Check if the listing already exists
@@ -177,7 +177,7 @@ class DjangoORMPipeline:
                 # Log if the listing already exists and is skipped
                 spider.logger.info(f"Listing {item.get('airbnb_listing_id')} already exists, skipping.")
         except IntegrityError as e:
-            spider.logger.error(f"Failed to save listing {item.get('name')} to the database: {e}")
+            spider.logger.error(f"Failed to save listing {item.get('airbnb_listing_id')} to the database: {e}")
         except Exception as e:
             spider.logger.error(f"Failed to save listing {item.get('name')} to the database: {e}")
 
