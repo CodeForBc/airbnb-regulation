@@ -21,7 +21,7 @@ def handle_spider_completion():
     """
     global is_scraping
     is_scraping = False
-    logger.info("Scrapy crawl completed and flag reset.")
+    logger.info(f"Scrapy crawl completed and flag reset. Flag: {is_scraping}")
     logger.info("Scrapy process completed successfully")
 
 
@@ -54,7 +54,6 @@ def harvest_listings(request):
     Django view to initiate the harvesting process.
     """
     global is_scraping
-    print("harvesting_listing", is_scraping)
     try:
         if not is_scraping:
             # Configure Scrapy logging
