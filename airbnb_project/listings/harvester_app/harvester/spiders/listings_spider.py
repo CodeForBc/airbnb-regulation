@@ -213,7 +213,8 @@ class ListingsSpider(scrapy.Spider):
         listing_id: str = listing.get("id")
 
         if not listing_id:
-            print(f"Missing listing ID: {listing_id}")
+            print(f"Missing listing ID.\nResults: {json.dumps(result)}")
+
             return None
 
         return {
