@@ -82,6 +82,10 @@ DATABASES = {
     'default': {
         'NAME': 'airbnb_db',
         'ENGINE': 'django.db.backends.postgresql',
+        'USER': os.environ['POSTGRES_USER'],
+        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
+        'HOST': 'db',  # The same service name from docker-compose
+        'PORT': os.environ['POSTGRES_HOST_PORT'],
     }
 }
 

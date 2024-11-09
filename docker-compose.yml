@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16.4-bullseye
+    container_name: airbnb_postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_HOST_PORT}:5432"
+    networks:
+      - airbnb_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  policies:
+    container_name: airbnb_policies
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: python manage.py check
+    volumes:
+      - ./airbnb_project:/app/airbnb_project
+      - poetry-cache:/opt/.cache
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_NAME=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=${POSTGRES_HOST_PORT}
+    depends_on: 
+      db:
+        condition: service_healthy
+    networks:
+      - airbnb_network
+volumes:
+  pgdata:
+    driver: local
+  poetry-cache:
+    driver: local
+networks:
+  airbnb_network:
+    driver: bridge
