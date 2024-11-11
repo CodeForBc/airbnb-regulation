@@ -37,6 +37,5 @@ ENV_VARIABLES: dict[str, str] = {
     'POSTGRES_DB': get_env_variable('POSTGRES_DB'),
     'POSTGRES_USER': get_env_variable('POSTGRES_USER'),
     'POSTGRES_PASSWORD': get_env_variable('POSTGRES_PASSWORD'),
-    'POSTGRES_HOST': get_env_variable('POSTGRES_HOST'),
     'POSTGRES_PORT': get_env_variable('POSTGRES_PORT'),
 }
