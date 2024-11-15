@@ -1,7 +1,3 @@
-Here's an updated README that assumes the container already installs dependencies and handles database migrations
-automatically:
-
----
 
 # Airbnb Listings Harvester API
 
@@ -9,34 +5,62 @@ A Django API service that harvests Airbnb listings data using Scrapy.
 
 ## Prerequisites
 
-- Setup of container is required for this service. Please look at the root README.md for more information on how to set
-  up.
+To run this service, you'll need to set up Docker and Docker Compose for the environment. Please follow the instructions below for setting up Docker, building the containers, and configuring the environment.
 
-## Setup
+### 1. Install Docker and Docker Compose
 
-### 1. Starting the Services
+Ensure you have Docker and Docker Compose installed on your system. If not, you can install them as follows:
 
-Run the following command, in the root, to start all services, including the `listings` Django app and the PostgreSQL database:
+- **Docker Installation**: [Install Docker](https://docs.docker.com/get-docker/)
+- **Docker Compose Installation**: [Install Docker Compose](https://docs.docker.com/compose/install/)
+
+### 2. Set Up the Environment
+
+Create a `.env` file in the root directory of the project with the following configuration. This file contains environment variables that will be used by the Docker containers:
+
+#### Example `.env` File:
+
+```env
+# Django settings
+SECRET_KEY=your_secret_key
+DJANGO_DEBUG=True
+AIRBNB_PUBLIC_API_KEY=
+
+# PostgreSQL settings
+POSTGRES_PASSWORD=your_password
+POSTGRES_USER=your_username
+POSTGRES_DB=your_db_name
+POSTGRES_HOST_PORT=5432
+```
+
+Replace the placeholders with your actual values:
+- **SECRET_KEY**: A secret key for Django.
+- **POSTGRES_PASSWORD**, **POSTGRES_USER**, **POSTGRES_DB**: Credentials for your PostgreSQL database.
+
+The `.env` file will automatically be used by Docker Compose to configure your containers.
+
+### 3. Starting the Services
+
+Run the following command from the root directory of your project to start all the necessary services:
 
 ```bash
 docker-compose up -d
 ```
 
-This command:
+This command will:
+- Build and start the PostgreSQL database container.
+- Build and start the `listings` Django app container.
+- Automatically install dependencies and apply database migrations inside the container.
 
-- Starts a PostgreSQL database container that the Django application connects to.
-- Launches the `listings` container with the Django API server running at `http://localhost:8001/`.
-- Automatically handles dependency installation and database migrations inside the container.
+### 4. Accessing the Application
 
-### 2. Accessing the Application
-
-The Django server is accessible at `http://localhost:8001/` on your host machine.
+Once the services are running, the Django server will be available at `http://localhost:8001/` on your host machine. You can access the API and other resources via this URL.
 
 ## API Documentation
 
 ### Harvest Listings Endpoint
 
-Triggers the Airbnb listings harvesting process.
+This endpoint triggers the process of harvesting Airbnb listings data.
 
 - **URL**: `/listings/harvest-listings/`
 - **Method**: `GET`
@@ -49,7 +73,7 @@ Triggers the Airbnb listings harvesting process.
     - **Code**: 500
         - **Content**: Internal server error during harvest initiation
 
-Example usage with curl:
+Example usage with `curl`:
 
 ```bash
 curl http://localhost:8001/listings/harvest-listings/
@@ -57,15 +81,17 @@ curl http://localhost:8001/listings/harvest-listings/
 
 ## Testing
 
-To run tests in the `listings` container:
+To run tests within the `listings` container, execute the following command:
 
 ```bash
 docker-compose exec listings python manage.py test listings
 ```
 
+This will run the tests for the `listings` app and output the results to your terminal.
+
 ### Expected Test Output
 
-A successful test run should show output similar to:
+A successful test run should show output similar to the following:
 
 ```text
 Found 21 test(s).
@@ -74,16 +100,9 @@ System check identified no issues (0 silenced).
 .......................
 
 ----------------------------------------------------------------------
+
 Ran 21 tests in 0.077s
 
 OK
 Destroying test database for alias 'default'...
 ```
-
-## Troubleshooting
-
-- **Database Connection Errors**: Make sure the `db` container is healthy and reachable. Check your `.env` file to
-  ensure all environment variables are correctly set.
-- **Permission Issues**: For development, ensure shared volumes have the correct permissions if you encounter file
-  access issues.
-
