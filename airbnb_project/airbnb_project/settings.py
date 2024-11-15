@@ -85,7 +85,7 @@ DATABASES = {
         'USER': ENV_VARIABLES['POSTGRES_USER'],
         'PASSWORD': ENV_VARIABLES['POSTGRES_PASSWORD'],
         'HOST': 'db',
-        'PORT': ENV_VARIABLES['POSTGRES_PORT'],
+        'PORT': ENV_VARIABLES['POSTGRES_HOST_PORT'],
     }
 }
 # Password validation
