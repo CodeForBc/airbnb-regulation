@@ -37,8 +37,8 @@ class DjangoORMPipelineTest(TestCase):
         self.assertEqual(Listing.objects.count(), 1)
         listing = Listing.objects.get(airbnb_listing_id='12345')
         self.assertEqual(listing.name, 'Test Listing')
-        self.assertEqual(listing.beds, '3')  # Update assertion to compare strings
-        self.assertEqual(listing.person_capacity, '5')  # Update assertion to compare strings
+        self.assertEqual(listing.beds, 3)  # Update assertion to compare strings
+        self.assertEqual(listing.person_capacity, 5)  # Update assertion to compare strings
 
     def test_process_item_skips_existing_listing(self):
         # Create a listing in the database
@@ -46,15 +46,15 @@ class DjangoORMPipelineTest(TestCase):
             airbnb_listing_id='12345',
             name='Existing Listing',
             title='Old Apartment',
-            baths='2',  # Converted to string
-            beds='3',  # Converted to string
-            latitude='49.2827',  # Converted to string
-            longitude='-123.1207',  # Converted to string
-            person_capacity='5',  # Converted to string
+            baths=2,
+            beds=3,
+            latitude='49.2827',
+            longitude='-123.1207',
+            person_capacity=5,
             registration_number='DEF456',
             room_type='Entire home/apt',
             location='Downtown Vancouver',
-            is_bath_shared=False,  # Keep this as boolean
+            is_bath_shared=False,
             baths_text='2 baths'
         )
 
@@ -63,15 +63,15 @@ class DjangoORMPipelineTest(TestCase):
             'airbnb_listing_id': '12345',
             'name': 'Test Listing',
             'title': 'Beautiful Apartment',
-            'baths': '2',  # Converted to string
-            'beds': '3',  # Converted to string
-            'latitude': '49.2827',  # Converted to string
-            'longitude': '-123.1207',  # Converted to string
-            'person_capacity': '5',  # Converted to string
+            'baths': 2,
+            'beds': 3,
+            'latitude': '49.2827',
+            'longitude': '-123.1207',
+            'person_capacity': 5,
             'registration_number': 'ABC123',
             'room_type': 'Entire home/apt',
             'location': 'Downtown Vancouver',
-            'bath_is_shared': False,  # Keep this as boolean
+            'bath_is_shared': False,
             'baths_text': '2 baths'
         }
 
@@ -89,15 +89,15 @@ class DjangoORMPipelineTest(TestCase):
             'airbnb_listing_id': '', # Missing ID, which will cause an IntegrityError/ValidationError
             'name': 'Test Listing',
             'title': 'Beautiful Apartment',
-            'baths': '2',  # Converted to string
-            'beds': '3',  # Converted to string
-            'latitude': '49.2827',  # Converted to string
-            'longitude': '-123.1207',  # Converted to string
-            'person_capacity': '5',  # Converted to string
+            'baths': 2,
+            'beds': 3,
+            'latitude': '49.2827',
+            'longitude': '-123.1207',
+            'person_capacity': 5,
             'registration_number': 'ABC123',
             'room_type': 'Entire home/apt',
             'location': 'Downtown Vancouver',
-            'bath_is_shared': False,  # Keep this as boolean
+            'bath_is_shared': False,
             'baths_text': '2 baths'
         }
 
