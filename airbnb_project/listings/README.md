@@ -1,62 +1,36 @@
+Here's an updated README that assumes the container already installs dependencies and handles database migrations
+automatically:
+
+---
+
 # Airbnb Listings Harvester API
 
-A Django API service that harvests Airbnb listings data using Scrapy. 
+A Django API service that harvests Airbnb listings data using Scrapy.
+
 ## Prerequisites
 
-- Python 3.x
-- Poetry for dependency management
-- Docker and Docker Compose (for database)
+- Setup of container is required for this service. Please look at the root README.md for more information on how to set
+  up.
 
 ## Setup
 
-### 1. Environment Configuration
+### 1. Starting the Services
 
-Create a `.env` file in the `airbnb_project` folder with the following variables:
-
-```env
-SECRET_KEY=your_secret_key
-DJANGO_DEBUG=True
-AIRBNB_PUBLIC_API_KEY=
-POSTGRES_PASSWORD=your_password
-POSTGRES_USER=your_username
-POSTGRES_DB=your_db_name
-POSTGRES_HOST_PORT=5432
-```
-
-### 2. Database Setup
-
-Start the PostgreSQL database using Docker:
+Run the following command, in the root, to start all services, including the `listings` Django app and the PostgreSQL database:
 
 ```bash
 docker-compose up -d
 ```
 
-### 3. Database Migrations
+This command:
 
-Run the following commands to set up the database schema:
+- Starts a PostgreSQL database container that the Django application connects to.
+- Launches the `listings` container with the Django API server running at `http://localhost:8001/`.
+- Automatically handles dependency installation and database migrations inside the container.
 
-```bash
-python manage.py makemigrations listings
-python manage.py migrate listings
-```
+### 2. Accessing the Application
 
-### 4. Dependencies Installation
-
-Install required dependencies using Poetry:
-
-```bash
-poetry install
-```
-
-## Running the Application
-
-Start the Django development server:
-
-```bash
-python manage.py runserver
-```
-
-The server will be available at `http://127.0.0.1:8000/`.
+The Django server is accessible at `http://localhost:8001/` on your host machine.
 
 ## API Documentation
 
@@ -78,15 +52,15 @@ Triggers the Airbnb listings harvesting process.
 Example usage with curl:
 
 ```bash
-curl http://127.0.0.1:8000/listings/harvest-listings/
+curl http://localhost:8001/listings/harvest-listings/
 ```
 
 ## Testing
 
-Run the tests using:
+To run tests in the `listings` container:
 
 ```bash
-python manage.py test listings
+docker-compose exec listings python manage.py test listings
 ```
 
 ### Expected Test Output
@@ -105,3 +79,11 @@ Ran 21 tests in 0.077s
 OK
 Destroying test database for alias 'default'...
 ```
+
+## Troubleshooting
+
+- **Database Connection Errors**: Make sure the `db` container is healthy and reachable. Check your `.env` file to
+  ensure all environment variables are correctly set.
+- **Permission Issues**: For development, ensure shared volumes have the correct permissions if you encounter file
+  access issues.
+
