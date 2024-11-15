@@ -1,7 +1,6 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
 from django.urls import reverse
-from threading import Thread
 
 
 class HarvestListingsTest(TestCase):
