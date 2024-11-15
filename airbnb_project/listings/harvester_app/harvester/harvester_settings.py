@@ -28,12 +28,11 @@ def get_harvester_settings():
 
         # Custom Settings
         'CSV_STORE_FILE_NAME': coordinates_file_path,
-        'FEEDS': {
-            coordinates_file_path: {'format': 'csv', 'overwrite': False},
-        },
         # Configure item pipelines
         'ITEM_PIPELINES': {
             'listings.harvester_app.harvester.pipelines.AirbnbListingsPipelineDataCleaner': 400,
+            'listings.harvester_app.harvester.pipelines.DjangoORMPipeline': 500,
+
         },
 
         # Set settings whose default value is deprecated to a future-proof value
