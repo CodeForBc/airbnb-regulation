@@ -35,5 +35,6 @@ ENV_VARIABLES: dict[str, str] = {
     'POSTGRES_USER': get_env_variable('POSTGRES_USER'),
     'POSTGRES_PASSWORD': get_env_variable('POSTGRES_PASSWORD'),
     'POSTGRES_HOST_PORT': get_env_variable('POSTGRES_HOST_PORT'),
-    'DJANGO_DEBUG': get_env_variable('DJANGO_DEBUG')
+    'DJANGO_DEBUG': get_env_variable('DJANGO_DEBUG'),
+    'SECRET_KEY': get_env_variable('SECRET_KEY')
 }
