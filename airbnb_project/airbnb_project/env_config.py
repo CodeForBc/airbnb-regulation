@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv, find_dotenv
 
-from airbnb_project.airbnb_project.exceptions import EnvConfigException
+from .exceptions import EnvConfigException
 
 # Load environment variables from a .env file
 load_dotenv(find_dotenv())
