@@ -1,57 +1,55 @@
-from django.test import TestCase
-from unittest.mock import patch, MagicMock
+from django.test import TestCase, Client
 from django.urls import reverse
+from unittest.mock import patch
+import logging
 
 
-class HarvestListingsTest(TestCase):
+class HarvestListingsViewTest(TestCase):
+    """
+    Test suite for the 'harvest_listings' view. This suite tests the behavior of the
+    view when the `run_harvest_task` is successful and when it fails.
 
-    @patch('listings.views.reactor')  # Mock the reactor
-    @patch('listings.views.Thread')  # Mock the Thread
-    @patch('listings.views.CrawlerRunner')  # Mock the Scrapy runner
-    def test_harvest_listings_success(self, mock_runner, mock_thread, mock_reactor):
+    Methods:
+        setUp: Prepares the test client and necessary components.
+        test_harvest_listings_success: Tests successful execution of the harvest task.
+        test_harvest_listings_failure: Tests failure in executing the harvest task.
+    """
+
+    def setUp(self):
         """
-        Test the harvest_listings view for a successful start.
+        Sets up the necessary components for each test, including the test client,
+        the URL for the 'harvest_listings' view, and the logger.
         """
-        # Ensure reactor is not running and scraping is not in progress
-        mock_reactor.running = False
-        mock_thread_instance = MagicMock()  # Create a mock thread instance
-        mock_thread.return_value = mock_thread_instance
+        self.client = Client()
+        self.url = reverse('harvest_listings')
+        self.logger = logging.getLogger('django')
 
-        # Make a GET request to the harvest_listings view
-        response = self.client.get(reverse('harvest_listings'))
+    @patch('listings.tasks.run_harvest_task.delay')
+    def test_harvest_listings_success(self, mock_run_harvest_task):
+        """
+        Tests that the 'harvest_listings' view returns a 202 status code when the
+        harvest task is successfully initiated and the task is called once.
 
-        # Check that a new thread was started
-        mock_thread.assert_called_once()
-
-        # Ensure the Scrapy runner has been called
-        mock_runner.assert_called_once()
-
-        # Validate response status code and content
+        Args:
+            mock_run_harvest_task: Mocked version of the 'run_harvest_task.delay' method.
+        """
+        mock_run_harvest_task.return_value = None
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 202)
-        self.assertEqual(response.content.decode(), "Harvesting process started")
+        mock_run_harvest_task.assert_called_once()
 
-    @patch('listings.views.is_scraping', new=True)  # Simulate is_scraping being True
-    def test_harvest_listings_already_running(self):
+    @patch('listings.tasks.run_harvest_task.delay')
+    def test_harvest_listings_failure(self, mock_run_harvest_task):
         """
-        Test the harvest_listings view when the spider is already running.
-        """
-        # Make a GET request to the harvest_listings view
-        response = self.client.get(reverse('harvest_listings'))
+        Tests that the 'harvest_listings' view returns a 500 status code when the
+        harvest task fails, and logs the error appropriately.
 
-        # Validate response status code and content
-        self.assertEqual(response.status_code, 409)
-        self.assertEqual(response.content.decode(), "A harvesting process is already running")
-
-    @patch('listings.views.reactor')  # Mock the reactor
-    @patch('listings.views.is_scraping', new=False)  # Simulate is_scraping being False
-    def test_harvest_listings_failure(self, mock_reactor):
+        Args:
+            mock_run_harvest_task: Mocked version of the 'run_harvest_task.delay' method.
         """
-        Test the harvest_listings view when an exception occurs.
-        """
-        mock_reactor.running = False
-        # Force an exception to simulate failure during Scrapy runner start
-        with patch('listings.views.CrawlerRunner', side_effect=Exception("Crawler error")):
-            response = self.client.get(reverse('harvest_listings'))
+        mock_run_harvest_task.side_effect = Exception("Task failure")
 
-        self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.content.decode(), "Failed to start harvesting process")
+        with self.assertLogs('django', level='ERROR') as log:
+            response = self.client.get(self.url)
+            self.assertEqual(response.status_code, 500)
+            mock_run_harvest_task.assert_called_once()
