@@ -1,5 +1,3 @@
-import time
-
 from celery import shared_task
 from twisted.internet import reactor
 from scrapy.crawler import CrawlerRunner
@@ -7,11 +5,6 @@ from scrapy.utils.log import configure_logging
 from listings.harvester_app.harvester.spiders.listings_spider import ListingsSpider
 from listings.harvester_app.harvester.harvester_settings import get_harvester_settings
 import logging
-
-@shared_task
-def mock_action():
-    time.sleep(15)
-
 
 # Set up logger for the Celery task
 logger = logging.getLogger(__name__)
