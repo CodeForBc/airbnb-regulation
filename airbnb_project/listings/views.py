@@ -7,29 +7,6 @@ import time
 # Set up logger for this module
 logger = logging.getLogger(__name__)
 
-# Global flag to track if the spider is currently running
-is_scraping = False
-
-
-def with_celery(request):
-    res = mock_action.delay()
-    return HttpResponse("Celery task is done", status=200)
-
-
-def without_celery(request):
-    time.sleep(15)
-    return HttpResponse("Celery task is done", status=200)
-
-
-def handle_spider_completion():
-    """
-    Handle actions to perform when the spider completes crawling.
-    """
-    global is_scraping
-    is_scraping = False
-    logger.info(f"Scrapy crawl completed and flag reset. Flag: {is_scraping}")
-    logger.info("Scrapy process completed successfully")
-
 
 @require_http_methods(["GET"])
 def harvest_listings(request):
