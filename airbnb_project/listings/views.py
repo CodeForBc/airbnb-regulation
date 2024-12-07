@@ -1,8 +1,7 @@
 from django.http import HttpResponse
 from django.views.decorators.http import require_http_methods
 import logging
-from .tasks import mock_action, run_harvest_task
-import time
+from .tasks import  run_harvest_task
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
