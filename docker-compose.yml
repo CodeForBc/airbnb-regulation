@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:16.4-bullseye
@@ -20,10 +22,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
   policies:
     container_name: airbnb_policies
     build:
-      context: ./
+      context: ./  # Adjust if necessary
       dockerfile: Dockerfile
     env_file:
       - .env
@@ -44,10 +47,11 @@ services:
         condition: service_healthy
     networks:
       - airbnb_network
+
   listings:
     container_name: airbnb_listings
     build:
-      context: ./
+      context: ./  # Adjust if necessary
       dockerfile: Dockerfile
     env_file:
       - .env
@@ -74,11 +78,44 @@ services:
         condition: service_healthy
     networks:
       - airbnb_network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - airbnb_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  celery:
+    container_name: airbnb_celery
+    build:
+      context: ./  # Adjust if necessary
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: celery -A airbnb_project worker --loglevel=info
+    volumes:
+      - ./airbnb_project:/app/airbnb_project
+      - poetry-cache:/opt/.cache
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks:
+      - airbnb_network
+
 volumes:
   pgdata:
     driver: local
   poetry-cache:
     driver: local
+
 networks:
   airbnb_network:
     driver: bridge
