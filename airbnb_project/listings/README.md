@@ -1,64 +1,108 @@
-# Harvest Listings API
 
-This project includes a Django API endpoint that triggers a listings collections process using Scrapy. The view (
-`harvest_listings`) allows users to start the scraping process via a get request.
+# Airbnb Listings Harvester API
+
+A Django API service that harvests Airbnb listings data using Scrapy.
 
 ## Prerequisites
 
-1. Have python3 installed
-2. Have all the poetry dependencies installed
-3. Have postgres server running
-4. Add the `AirBnBAPI_KEY` in the `.env` file
+To run this service, you'll need to set up Docker and Docker Compose for the environment. Please follow the instructions below for setting up Docker, building the containers, and configuring the environment.
 
-## Running the Server
+### 1. Install Docker and Docker Compose
 
-1. **Start the Django Development Server**:
+Ensure you have Docker and Docker Compose installed on your system. If not, you can install them as follows:
 
-    ```bash
-    python manage.py runserver
-    ```
+- **Docker Installation**: [Install Docker](https://docs.docker.com/get-docker/)
+- **Docker Compose Installation**: [Install Docker Compose](https://docs.docker.com/compose/install/)
 
-   This will start the server on `http://127.0.0.1:8000/`.
+### 2. Set Up the Environment
 
-## Endpoint Details
+Create a `.env` file in the root directory of the project with the following configuration. This file contains environment variables that will be used by the Docker containers:
 
-### `GET /harvest-listings/`
+#### Example `.env` File:
 
-This endpoint starts the harvesting process.
+```env
+# Django settings
+SECRET_KEY=your_secret_key
+DJANGO_DEBUG=True
+AIRBNB_PUBLIC_API_KEY=
 
-- **URL**: `listings/harvest-listings/`
+# PostgreSQL settings
+POSTGRES_PASSWORD=your_password
+POSTGRES_USER=your_username
+POSTGRES_DB=your_db_name
+POSTGRES_HOST_PORT=5432
+```
+
+Replace the placeholders with your actual values:
+- **SECRET_KEY**: A secret key for Django.
+- **POSTGRES_PASSWORD**, **POSTGRES_USER**, **POSTGRES_DB**: Credentials for your PostgreSQL database.
+
+The `.env` file will automatically be used by Docker Compose to configure your containers.
+
+### 3. Starting the Services
+
+Run the following command from the root directory of your project to start all the necessary services:
+
+```bash
+docker-compose up -d
+```
+
+This command will:
+- Build and start the PostgreSQL database container.
+- Build and start the `listings` Django app container.
+- Automatically install dependencies and apply database migrations inside the container.
+
+### 4. Accessing the Application
+
+Once the services are running, the Django server will be available at `http://localhost:8001/` on your host machine. You can access the API and other resources via this URL.
+
+## API Documentation
+
+### Harvest Listings Endpoint
+
+This endpoint triggers the process of harvesting Airbnb listings data.
+
+- **URL**: `/listings/harvest-listings/`
 - **Method**: `GET`
-- **Status Codes**:
-    - `200`: Harvesting process started successfully.
-    - `409`: A harvesting process is already running.
-    - `500`: Failed to start the harvesting process due to an internal error.
+- **Success Response**:
+    - **Code**: 200
+    - **Content**: Harvesting process started successfully
+- **Error Responses**:
+    - **Code**: 409
+        - **Content**: A harvesting process is already running
+    - **Code**: 500
+        - **Content**: Internal server error during harvest initiation
 
-## How to Trigger the View
+Example usage with `curl`:
 
-You can trigger the harvesting process by sending a GET request to the `listings/harvest-listings/` endpoint.  
-The harvested listings will be saved in `listings_django.csv` in `harvester_app/harvester/spiders/`.
+```bash
+curl http://localhost:8001/listings/harvest-listings/
+```
 
 ## Testing
 
-To the run tests for the listings modules:
+To run tests within the `listings` container, execute the following command:
 
-```sh
-python manage.py test listings
+```bash
+docker-compose exec listings python manage.py test listings
 ```
 
-Example output when all tests passed:
+This will run the tests for the `listings` app and output the results to your terminal.
+
+### Expected Test Output
+
+A successful test run should show output similar to the following:
 
 ```text
-Found 18 test(s).
+Found 21 test(s).
 Creating test database for alias 'default'...
 System check identified no issues (0 silenced).
-.2024-09-19 16:27:16 [listings.views] ERROR: Failed to start harvesting process: Crawler error
-2024-09-19 16:27:16 [django.request] ERROR: Internal Server Error: /listings/harvest-listings/
-........regis 123456
-.........
+.......................
+
 ----------------------------------------------------------------------
-Ran 18 tests in 0.016s
+
+Ran 21 tests in 0.077s
 
 OK
-
+Destroying test database for alias 'default'...
 ```
