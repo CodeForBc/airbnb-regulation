@@ -34,4 +34,3 @@ def run_harvest_task(self):
         logger.info("Scrapy process completed successfully")
     except Exception as e:
         logger.error(f"Error in Scrapy process: {str(e)}")
-        raise self.retry(exc=e)
