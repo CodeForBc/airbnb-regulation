@@ -1,11 +1,9 @@
 from celery import shared_task
-from twisted.internet import reactor, defer
 from scrapy.crawler import CrawlerRunner, CrawlerProcess
 from scrapy.utils.log import configure_logging
 from listings.harvester_app.harvester.spiders.listings_spider import ListingsSpider
 from listings.harvester_app.harvester.harvester_settings import get_harvester_settings
 import logging
-from crochet import setup, wait_for
 
 logger = logging.getLogger(__name__)
 
