@@ -29,7 +29,7 @@ services:
       - .env
     command: python manage.py check
     volumes:
-      - ./airbnb_project:/app/airbnb_project
+      - ./airbnb_project/policies:/app/airbnb_project/policies
       - poetry-cache:/opt/.cache
     ports:
       - "8000:8000"

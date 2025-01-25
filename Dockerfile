@@ -70,7 +70,8 @@ FROM python-base AS dev-base
 WORKDIR /app
 
 # Copy virtual environment from builder
-COPY --from=builder-base ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY --from=builder-base /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy project
 COPY . .
