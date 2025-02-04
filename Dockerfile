@@ -71,7 +71,6 @@ WORKDIR /app
 
 # Copy virtual environment from builder
 COPY --from=builder-base ${VIRTUAL_ENV} ${VIRTUAL_ENV}
-ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy project
 COPY . .
