@@ -129,7 +129,6 @@ class ListingsSpider(scrapy.Spider):
                     zoom_level, zoom_level
                 )
                 requests.append(scrapy.FormRequest(formatted_url))
-
         return requests
 
     async def parse(self, response: Response, **kwargs) -> None:
