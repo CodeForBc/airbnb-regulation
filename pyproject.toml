@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 django = "^5.0.6"
-psycopg = {version = "^3.2.1", extras = ["binary", "pool"]}
+psycopg = {version = "^3.2.4", extras = ["binary", "pool"]}
 python = "^3.10"
 requests = "^2.32.3"
 scrapy = "^2.11.2"
