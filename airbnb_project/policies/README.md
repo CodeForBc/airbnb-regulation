@@ -1,6 +1,6 @@
-# Policies App Testing Guide
+# Policy Processor Testing Guide
 
-This guide covers the steps to set up and test the Policies app.
+This guide covers the steps to set up and test the Policy Processor
 
 ## Step 1: Set Django Settings Module
 
@@ -10,7 +10,7 @@ Set `DJANGO_SETTINGS_MODULE` in poetry shell
 DJANGO_SETTINGS_MODULE=airbnb_project.settings_test
 ```
 
-## Step 2: Create & Apply Migrations for Listings and Policies Apps
+## Step 2: Create & Apply Migrations for Listings and Policy Processor
 
 Make sure you have models in both the listings and policies apps. Then, create and apply migrations for listings app, following by policies app:
 
@@ -44,4 +44,25 @@ Ran 5 tests in 0.044s
 
 OK
 Destroying test database for alias 'default'...
+```
+ 
+## API Documentation
+
+### Policy Processor Listings Endpoint
+
+This endpoint triggers the process of evaluation of Airbnb listings data against the policies.
+
+- **URL**: `/policies/evaluate-policies/`
+- **Method**: `GET`
+- **Success Response**:
+    - **Code**: 200
+    - **Content**: Policy Evaluation Finished - Total `<Count>` listings evaluated successfully. Failed: `<Count>`
+- **Error Responses**:
+    - **Code**: 500
+        - **Content**: Internal server error during policy evaluation
+
+Example usage with `curl`:
+
+```bash
+curl http://localhost:8000/policies/evaluate-policies/
 ```
