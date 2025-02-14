@@ -21,10 +21,10 @@ def evaluate_policies(request):
         unprocessed_items = []
         success_counter = 0
         for listing in Listing.objects.all():
-            logger.info('listing', listing)
+            logger.info(f'listing: {listing}')
             business_licences_number = listing.registration_number
             status = BusinessLicenceClient().get_licence_status(business_licences_number)
-            logger.info('evaluation status', status)
+            logger.info(f'evaluation status: {status}')
             policy_evaluation_result = True if status.lower() == 'issued' else False
             listing_policy_result = ListingPolicyResult(
             listing=listing,
