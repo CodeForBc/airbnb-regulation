@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.utils import timezone
 
 class Listing(models.Model):
     airbnb_listing_id = models.TextField(blank=False, null=False)
@@ -15,6 +15,7 @@ class Listing(models.Model):
     title = models.TextField(null=True, blank=True)
     is_bath_shared = models.BooleanField(null=True, blank=True)
     baths_text = models.TextField(null=True, blank=True)
+    scrapped_at = models.DateTimeField(null=True, blank=True, default=timezone.now)
 
     def __str__(self):
         return self.name

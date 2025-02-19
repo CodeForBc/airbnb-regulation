@@ -152,30 +152,24 @@ class DjangoORMPipeline:
             spider.logger.error(f"Missing required airbnb_listing_id, skipping item, item Details\n{json.dumps(item)}")
             return item
         try:
-            # Check if the listing already exists
-            if not Listing.objects.filter(airbnb_listing_id=item.get('airbnb_listing_id')).exists():
-                # Create and save the new listing if it doesn't exist
-                listing = Listing(
-                    airbnb_listing_id=item.get('airbnb_listing_id'),
-                    name=item.get('name'),
-                    title=item.get('title'),
-                    baths=item.get('baths'),
-                    beds=item.get('beds'),
-                    latitude=item.get('latitude'),
-                    longitude=item.get('longitude'),
-                    person_capacity=item.get('person_capacity'),
-                    registration_number=item.get('registration_number'),
-                    room_type=item.get('room_type'),
-                    location=item.get('location'),
-                    is_bath_shared=item.get('bath_is_shared'),
-                    baths_text=item.get('baths_text')
-                )
-                # Save the listing to the database
-                listing.save()
-                spider.logger.info(f"New listing {item.get('airbnb_listing_id')} saved to the database.")
-            else:
-                # Log if the listing already exists and is skipped
-                spider.logger.info(f"Listing {item.get('airbnb_listing_id')} already exists, skipping.")
+            listing = Listing(
+                airbnb_listing_id=item.get('airbnb_listing_id'),
+                name=item.get('name'),
+                title=item.get('title'),
+                baths=item.get('baths'),
+                beds=item.get('beds'),
+                latitude=item.get('latitude'),
+                longitude=item.get('longitude'),
+                person_capacity=item.get('person_capacity'),
+                registration_number=item.get('registration_number'),
+                room_type=item.get('room_type'),
+                location=item.get('location'),
+                is_bath_shared=item.get('bath_is_shared'),
+                baths_text=item.get('baths_text')
+            )
+            # Save the listing to the database
+            listing.save()
+            spider.logger.info(f"New listing {item.get('airbnb_listing_id')} saved to the database.")
         except IntegrityError as e:
             spider.logger.error(f"Failed to save listing {item.get('airbnb_listing_id')} to the database: {e}")
         except Exception as e:
