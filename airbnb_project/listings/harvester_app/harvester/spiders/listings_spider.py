@@ -1,4 +1,3 @@
-import csv
 import json
 import base64
 import os
@@ -6,7 +5,6 @@ from typing import List, Dict, Any
 
 import scrapy
 from scrapy import Request
-from scrapy.crawler import CrawlerProcess
 
 from listings.harvester_app.harvester.items import ExpandedAirBnBListingItem
 from scrapy.http import Response
