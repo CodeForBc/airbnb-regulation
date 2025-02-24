@@ -1,17 +1,16 @@
-import csv
 import json
 import base64
-import os
 from typing import List, Dict, Any
 
 import scrapy
 from scrapy import Request
-from scrapy.crawler import CrawlerProcess
 
 from listings.harvester_app.harvester.items import ExpandedAirBnBListingItem
 from scrapy.http import Response
 from urllib.parse import quote
 from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
+from listings.harvester_app.harvester.spiders.coordinates_builder import AirbnbCoordinatesBuilder
+from listings.harvester_app.harvester.spiders.constants import Cities
 
 
 def base64_encode_string(input_string):
@@ -55,6 +54,9 @@ class ListingsSpider(scrapy.Spider):
     # Instance of AirBnbURLBuilder to generate URLs for different search parameters
     URL_BUILDER = AirBnbURLBuilder()
 
+    # Instance of CoordinatesBuilder to generate the coordinates for a city.
+    COORDINATES_BUILDER = AirbnbCoordinatesBuilder()
+
     def start_requests(self) -> List[scrapy.FormRequest]:
         """
         Generate initial requests for scraping Airbnb listings using coordinates from a JSON file.
@@ -70,36 +72,18 @@ class ListingsSpider(scrapy.Spider):
 
     def _load_coordinates(self) -> List[Dict[str, float]]:
         """
-        Read coordinates from a JSON file.
-
-        This method attempts to read and parse a 'coordinates.json' file,
-        which should contain a list of coordinate dictionaries.
+        Generate coordinates dynamically using AirbnbCoordinatesBuilder for Vancouver.
 
         Returns:
             List[Dict[str, float]]: A list of coordinate dictionaries, where each dictionary
             contains 'ne_lat', 'ne_lng', 'sw_lat', and 'sw_lng' keys with float values.
-            Returns an empty list if the file is not found or cannot be parsed.
-
-        Raises:
-            FileNotFoundError: If the 'coordinates.json' file is not found.
-            json.JSONDecodeError: If there's an error decoding the JSON in the file.
+            Returns an empty list in case of an error.
         """
         try:
-            # Get the absolute path to the current script (listings_spider.py)
-            current_directory = os.path.dirname(os.path.abspath(__file__))
-            # Construct the absolute path to coordinates.json
-            coordinates_file_path = os.path.join(current_directory, 'coordinates.json')
-            with open(coordinates_file_path, 'r') as file:
-                return json.load(file)
-        except FileNotFoundError:
-            print("Coordinates file not found")
-            return []
-        except json.JSONDecodeError:
-            print("Error decoding JSON in coordinates file")
-            return []
-        except Exception:
-            print("Unknown error occurred while reading the coordinates file")
-            return []
+            return ListingsSpider.COORDINATES_BUILDER.build_coordinates(Cities.VANCOUVER, 100)
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return []  # Catch-all for any other issues
 
     def _generate_requests(self, coordinates: List[Dict[str, float]]) -> List[scrapy.FormRequest]:
         """
