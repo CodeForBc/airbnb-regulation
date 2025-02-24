@@ -22,6 +22,7 @@ class TestAirbnbCoordinatesBuilder(unittest.TestCase):
 
     def test_build_coordinates_invalid_city(self):
         """Test build_coordinates raises ValueError for an unsupported city."""
+
         with self.assertRaises(ValueError):
             self.builder.build_coordinates("INVALID_CITY", 100)
 

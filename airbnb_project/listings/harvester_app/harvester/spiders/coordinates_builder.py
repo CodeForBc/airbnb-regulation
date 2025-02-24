@@ -1,10 +1,9 @@
 """
 Module to generate coordinate-based bounding boxes for Airbnb URL queries.
 """
-import json
 from abc import ABC, abstractmethod
 from typing import List, Dict
-from constants import Cities, CITY_COORDINATE_BOUNDARY
+from listings.harvester_app.harvester.spiders.constants import Cities, CITY_COORDINATE_BOUNDARY
 
 
 class CoordinatesBuilder(ABC):
@@ -34,7 +33,7 @@ class AirbnbCoordinatesBuilder(CoordinatesBuilder):
         :return: A list of bounding boxes.
         """
         if city not in CITY_COORDINATE_BOUNDARY:
-            raise ValueError(f"City {city.name} is not supported.")
+            raise ValueError(f"City is not supported.")
 
         bbox = CITY_COORDINATE_BOUNDARY[city]
         lon_min, lat_min = bbox[0]  # Bottom-left corner
