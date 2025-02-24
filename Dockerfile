@@ -19,10 +19,6 @@ ENV PYTHONUNBUFFERED=1 \
     VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
 
-# Create and activate virtual environment
-ENV VIRTUAL_ENV=/app/.venv
-RUN python -m venv "$VIRTUAL_ENV"
-
 ################################
 # BUILDER-BASE
 # Used to build dependencies + create virtual environment

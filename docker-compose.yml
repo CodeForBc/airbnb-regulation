@@ -30,7 +30,11 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    command: python manage.py check
+    command: >
+      /bin/sh -c "
+        echo 'Starting the server...' &&
+        python manage.py runserver 0.0.0.0:8000
+      "
     volumes:
       - ./airbnb_project:/app/airbnb_project
       - poetry-cache:/opt/.cache
