@@ -1,4 +1,5 @@
 from celery import shared_task
+from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.log import configure_logging
 from listings.harvester_app.harvester.spiders.listings_spider import ListingsSpider
@@ -27,7 +28,7 @@ def run_spider():
     runner.start(stop_after_crawl=False)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, retry_kwargs={'max_retries': 1}, ignore_result=True, time_limit=1400, soft_time_limit=1200)
 def run_harvest_task(self):
     """
     Celery task to trigger the Scrapy spider for harvesting listings.
@@ -46,5 +47,9 @@ def run_harvest_task(self):
         # Run the spider and wait for it to complete
         run_spider()
         logger.info("Scrapy process completed successfully")
+    except SoftTimeLimitExceeded:
+        print("Soft time limit exceeded. Cleaning up...")
+    except TimeLimitExceeded:
+        print("Time limit exceeded. Cleaning up...")
     except Exception as e:
         logger.error(f"Error in Scrapy process: {e}")
