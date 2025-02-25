@@ -111,9 +111,6 @@ Start
 Initialize Spider
   |
   V
-Load Already Scraped Listings
-  |
-  V
 Load Coordinates
   |
   V
@@ -130,9 +127,6 @@ Parse Search Results
   |          |
   |          V
   |   For each Listing
-  |          |
-  |          V
-  |  Check if Already Scraped
   |          |
   |          V
   |  Construct Details Request
