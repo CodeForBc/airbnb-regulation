@@ -28,7 +28,7 @@ def run_spider():
     runner.start(stop_after_crawl=False)
 
 
-@shared_task(bind=True, retry_kwargs={'max_retries': 1}, ignore_result=True, time_limit=1400, soft_time_limit=1200)
+@shared_task(bind=True, retry_kwargs={'max_retries': 1}, ignore_result=True, time_limit=1800, soft_time_limit=1600)
 def run_harvest_task(self):
     """
     Celery task to trigger the Scrapy spider for harvesting listings.
