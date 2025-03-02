@@ -51,14 +51,10 @@ phases: initialization, sending requests, parsing responses, and handling pagina
     - The `ListingsSpider` class is initialized with attributes such
       as `allowed_domains`, `start_urls`, `next_page_cursors`, `total_listings`, and `ALREADY_SCRAPED_LISTINGS`.
 
-2. **Loading Already Scraped Listings**:
-    - The spider reads already scraped listing IDs from a CSV file and stores them in the `ALREADY_SCRAPED_LISTINGS` set
-      to avoid re-scraping the same listings.
-
-3. **Loading Coordinates**:
+2. **Loading Coordinates**:
     - Coordinates are read from a JSON file in which the locations will be processed.
 
-4. **Generating Initial Requests**:
+3. **Generating Initial Requests**:
     - Initial Scrapy requests are generated using the URL templates and the coordinates read from the JSON file. Each
       request is a `FormRequest` to search Airbnb listings in specific areas of Vancouver.
 
@@ -77,7 +73,7 @@ phases: initialization, sending requests, parsing responses, and handling pagina
     - For each listing, it checks if the listing ID has already been scraped.
 
 2. **Requesting Listing Details**:
-    - If a listing has not been scraped yet, it constructs a new request URL to fetch detailed information about the
+    - It constructs a new request URL to fetch detailed information about the
       listing.
     - The constructed URL uses the Airbnb API with the listing ID encoded using base64 and URL encoding functions.
     - These requests are sent with the necessary headers, including the API key.
