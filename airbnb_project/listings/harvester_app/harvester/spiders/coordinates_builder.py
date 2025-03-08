@@ -24,22 +24,22 @@ class CoordinatesBuilder(ABC):
 class AirbnbCoordinatesBuilder(CoordinatesBuilder):
     """Concrete implementation of CoordinatesBuilder to generate Airbnb coordinate grids."""
 
-    def build_coordinates(self, city: Cities, n: int) -> List[Dict[str, str]]:
+    def build_coordinates(self, city: Cities) -> List[Dict[str, str]]:
         """
         Generates a list of bounding boxes for Airbnb listings in the given city.
 
         :param city: The city for which coordinates should be generated.
-        :param n: The number of subdivisions (bounding boxes) required.
         :return: A list of bounding boxes.
         """
         if city not in CITY_COORDINATE_BOUNDARY:
             raise ValueError(f"City is not supported.")
 
-        bbox = CITY_COORDINATE_BOUNDARY[city]
+        bbox = CITY_COORDINATE_BOUNDARY[city]["bounding_box"]
+        number_of_grids = CITY_COORDINATE_BOUNDARY[city]["grid_size"]
         lon_min, lat_min = bbox[0]  # Bottom-left corner
         lon_max, lat_max = bbox[1]  # Top-right corner
 
-        num_cols, num_rows = self._calculate_grid_size(n)
+        num_cols, num_rows = self._calculate_grid_size(number_of_grids)
 
         return self._generate_bounding_boxes(lon_min, lat_min, lon_max, lat_max, num_cols, num_rows)
 
