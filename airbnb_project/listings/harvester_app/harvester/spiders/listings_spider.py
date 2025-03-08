@@ -80,7 +80,7 @@ class ListingsSpider(scrapy.Spider):
             Returns an empty list in case of an error.
         """
         try:
-            return ListingsSpider.COORDINATES_BUILDER.build_coordinates(Cities.VANCOUVER, 100)
+            return ListingsSpider.COORDINATES_BUILDER.build_coordinates(Cities.VANCOUVER)
         except Exception as e:
             print(f"Unexpected error: {e}")
             return []  # Catch-all for any other issues
