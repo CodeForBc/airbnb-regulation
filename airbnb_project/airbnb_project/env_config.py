@@ -31,6 +31,7 @@ def get_env_variable(var_name: str) -> str:
 
 # Define a dictionary to hold your environment variables
 ENV_VARIABLES: dict[str, str] = {
+    'POSTGRES_URL':get_env_variable('POSTGRES_URL'),
     'POSTGRES_DB': get_env_variable('POSTGRES_DB'),
     'POSTGRES_USER': get_env_variable('POSTGRES_USER'),
     'POSTGRES_PASSWORD': get_env_variable('POSTGRES_PASSWORD'),
