@@ -20,6 +20,8 @@ def evaluate_policies(request):
         logger.info("Evaluating Listings....")
         unprocessed_items = []
         success_counter = 0
+        if not request.GET.get('scrapped_at', None):
+            return HttpResponse("Please provide query param `scrapped_at`in YYYY-MM-DD format")
         for listing in Listing.objects.filter(scrapped_at=request.GET['scrapped_at']):
             logger.info(f'listing: {listing}')
             business_licences_number = listing.registration_number

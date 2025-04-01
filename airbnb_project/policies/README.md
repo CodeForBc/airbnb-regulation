@@ -51,8 +51,9 @@ Destroying test database for alias 'default'...
 ### Policy Processor Listings Endpoint
 
 This endpoint triggers the process of evaluation of Airbnb listings data against the policies.
+You'd want to run the harvester endpoint first and use the date from harvester run in the query param below.
 
-- **URL**: `/policies/evaluate-policies/`
+- **URL**: `/policies/evaluate-policies/?scrapped_at=<YYYY-MM-DD>`
 - **Method**: `GET`
 - **Success Response**:
     - **Code**: 200
@@ -64,5 +65,5 @@ This endpoint triggers the process of evaluation of Airbnb listings data against
 Example usage with `curl`:
 
 ```bash
-curl http://localhost:8000/policies/evaluate-policies/
+curl http://localhost:8000/policies/evaluate-policies/?scrapped_at=<YYYY-MM-DD>
 ```
