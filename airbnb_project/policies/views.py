@@ -4,7 +4,7 @@ import logging
 import datetime
 from listings.listing_models import Listing
 from policies.services.business_licence_client import BusinessLicenceClient
-
+import json
 from policies.models import ListingPolicyResult
 
 # Set up logger for this module
@@ -20,7 +20,7 @@ def evaluate_policies(request):
         logger.info("Evaluating Listings....")
         unprocessed_items = []
         success_counter = 0
-        for listing in Listing.objects.all():
+        for listing in Listing.objects.filter(scrapped_at=request.GET['scrapped_at']):
             logger.info(f'listing: {listing}')
             business_licences_number = listing.registration_number
             status = BusinessLicenceClient().get_licence_status(business_licences_number)
