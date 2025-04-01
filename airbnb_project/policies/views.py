@@ -23,7 +23,7 @@ def evaluate_policies(request):
         if not request.GET.get('scrapped_at', None):
             return HttpResponse("Please provide query param `scrapped_at`in YYYY-MM-DD format")
         for listing in Listing.objects.filter(scrapped_at=request.GET['scrapped_at']):
-            logger.info(f'listing: {listing}')
+            logger.info(f'listing: {listing.airbnb_listing_id}')
             business_licences_number = listing.registration_number
             status = BusinessLicenceClient().get_licence_status(business_licences_number)
             logger.info(f'evaluation status: {status}')
