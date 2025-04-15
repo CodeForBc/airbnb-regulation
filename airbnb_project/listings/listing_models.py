@@ -15,7 +15,7 @@ class Listing(models.Model):
     title = models.TextField(null=True, blank=True)
     is_bath_shared = models.BooleanField(null=True, blank=True)
     baths_text = models.TextField(null=True, blank=True)
-    scrapped_at = models.DateField(null=True, blank=True, default=timezone.now)
+    scrapped_at = models.DateField(null=True, blank=True, default=timezone.now())
 
     def __str__(self):
         return self.name
