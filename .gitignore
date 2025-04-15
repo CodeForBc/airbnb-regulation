@@ -163,6 +163,3 @@ cython_debug/
 
 # exclude all .DS_Store files
 .DS_Store
-
-# Ignore any migrations created by Django
-airbnb_project/listings/migrations/
