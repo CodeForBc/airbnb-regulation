@@ -106,3 +106,16 @@ Ran 21 tests in 0.077s
 OK
 Destroying test database for alias 'default'...
 ```
+
+### Development
+* If you want to re-create all the containers, you can use 
+
+```
+docker compose up -d --build --force-recreate
+```
+
+* To tail logs for a docker container, you can use
+
+```
+docker logs -f --tail 50 <container_name>
+```
