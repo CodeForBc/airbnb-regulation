@@ -21,7 +21,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 15
 
   policies:
     container_name: airbnb_policies
