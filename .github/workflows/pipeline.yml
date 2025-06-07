@@ -5,6 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  pull_reqeust:
   workflow_dispatch:
   push:
     branches:
@@ -135,7 +136,7 @@ jobs:
   # Deploy application (always runs, but waits for provision if it ran)
   deploy:
     runs-on: ubuntu-latest
-    needs: [check-changes, provision]
+    needs: [ check-changes, provision ]
 
     steps:
       - name: Checkout repository
