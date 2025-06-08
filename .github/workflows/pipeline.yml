@@ -135,11 +135,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
           aws-region: 'us-east-1'
           aws-bucket: ${{ secrets.BUCKET_NAME_DEV }}
+          bucket-root: '/'
           # TODO: Need to change this variables are dynamic
           destination-dir: '/'
           file-path: './terraform/dev/tf_outputs.json'
           # TODO: Maybe should be false I think
-          output-file-url: 'false'
 
   # Deploy application (always runs, but waits for provision if it ran)
   deploy:
