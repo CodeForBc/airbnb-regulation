@@ -136,7 +136,7 @@ jobs:
           aws-region: 'us-east-1'
           aws-bucket: ${{ secrets.BUCKET_NAME_DEV }}
           # TODO: Need to change this variables are dynamic
-          destination-dir: ''
+          destination-dir: '/'
           file-path: './terraform/dev/tf_outputs.json'
           # TODO: Maybe should be false I think
           output-file-url: 'false'
