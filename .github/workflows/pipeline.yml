@@ -110,7 +110,7 @@ jobs:
           terraform init -backend-config="bucket=${{secrets.BUCKET_NAME_DEV}}" -backend-config="key=${{secrets.BUCKET_KEY_DEV}}" -backend-config="region=us-east-1"          
           terraform apply -auto-approve \
             -var="db_name_dev=${{ secrets.POSTGRES_DB_DEV }}" \
-            -var="db_username_dev=${{ secrets.POSTGRES_USER_DEV }}" \
+            -var="db_user_dev=${{ secrets.POSTGRES_USER_DEV }}" \
             -var="db_password_dev=${{ secrets.DB_PASSWORD_DEV }}"
 
       - name: Save Terraform outputs
