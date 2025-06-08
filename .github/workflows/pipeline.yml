@@ -40,7 +40,6 @@ jobs:
             "POSTGRES_HOST_PORT_DEV"
             "CELERY_BROKER_URL_DEV"
             "CELERY_RESULT_BACKEND_DEV"
-            "GH_TOKEN_DEV"
           )
           
           MISSING=false
