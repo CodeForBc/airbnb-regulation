@@ -108,7 +108,10 @@ jobs:
         run: |
           cd terraform/dev
           terraform init -backend-config="bucket=${{secrets.BUCKET_NAME_DEV}}" -backend-config="key=${{secrets.BUCKET_KEY_DEV}}" -backend-config="region=us-east-1"          
-          terraform apply -auto-approve
+          terraform apply -auto-approve \
+            -var="db_name=${{ secrets.POSTGRES_DB_DEV }}" \
+            -var="username=${{ secrets.POSTGRES_USER_DEV }}" \
+            -var="password=${{ secrets.DB_PASSWORD_DEV }}"
 
       - name: Save Terraform outputs
         if: needs.check-changes.outputs.terraform-changed == 'true'
