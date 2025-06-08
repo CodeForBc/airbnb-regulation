@@ -137,9 +137,9 @@ jobs:
           aws-bucket: ${{ secrets.BUCKET_NAME_DEV }}
           # TODO: Need to change this variables are dynamic
           destination-dir: ''
-          file-path: 'tf_outputs.json'
+          file-path: './tf_outputs.json'
           # TODO: Maybe should be false I think
-          output-file-url: 'true'
+          output-file-url: 'false'
 
   # Deploy application (always runs, but waits for provision if it ran)
   deploy:
