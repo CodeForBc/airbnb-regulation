@@ -255,8 +255,8 @@ jobs:
             echo "Rebuilding and starting Docker containers..."
             docker-compose up -d --build
             
-           echo "Setting up cron jobs..."
-           cd /home/ec2-user/airbnb-regulation  # make sure you're in the right directory
-           chmod +x scripts/setup_cron.sh
-           ./scripts/setup_cron.sh
-           echo "✅ Deployment process completed."
+            echo "Setting up cron jobs..."
+            cd /home/ec2-user/airbnb-regulation  # make sure you're in the right directory
+            chmod +x scripts/setup_cron.sh
+            ./scripts/setup_cron.sh
+            echo "✅ Deployment process completed."
