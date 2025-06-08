@@ -224,7 +224,7 @@ jobs:
             AIRBNB_PUBLIC_API_KEY="${{ secrets.AIRBNB_PUBLIC_API_KEY_DEV }}"
             POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD_DEV }}
             POSTGRES_USER=${{ secrets.POSTGRES_USER_DEV }}
-            POSTGRES_URL=${{ steps.tf.outputs.rds_url_DEV }}
+            POSTGRES_URL=${{ steps.tf.outputs.rds_url }}
             POSTGRES_DB=${{ secrets.POSTGRES_DB_DEV }}
             POSTGRES_HOST_PORT=${{ secrets.POSTGRES_HOST_PORT_DEV }}
             CELERY_BROKER_URL=${{ secrets.CELERY_BROKER_URL_DEV }}
