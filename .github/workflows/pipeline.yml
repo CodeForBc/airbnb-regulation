@@ -215,7 +215,7 @@ jobs:
 
             cd airbnb-regulation
             echo "Pulling latest changes from main branch..."
-            git pull origin main
+            git pull origin dev
             
             echo "Creating .env file with environment variables..."
             cat <<EOF > .env
@@ -256,7 +256,6 @@ jobs:
             docker-compose up -d --build
             
             echo "Setting up cron jobs..."
-            cd /home/ec2-user/airbnb-regulation  # make sure you're in the right directory
             chmod +x scripts/setup_cron.sh
             ./scripts/setup_cron.sh
             echo "✅ Deployment process completed."
