@@ -17,42 +17,47 @@ permissions:
 jobs:
   validate-secrets:
     runs-on: ubuntu-latest
+    env:
+      SECRETS_CONTEXT: ${{ toJson(secrets) }}
     steps:
       - name: Validate required secrets
         run: |
+          echo "🔍 Validating required secrets..."
+          
+          # Required secrets list
           REQUIRED_SECRETS=(
-            "AWS_ACCESS_KEY_ID"
-            "AWS_SECRET_ACCESS_KEY"
-            "BUCKET_NAME"
-            "BUCKET_KEY"
-            "DB_PASSWORD"
-            "DJANGO_SECRET_KEY"
-            "DJANGO_DEBUG"
-            "AIRBNB_PUBLIC_API_KEY"
-            "POSTGRES_USER"
-            "POSTGRES_DB"
-            "POSTGRES_HOST_PORT"
-            "CELERY_BROKER_URL"
-            "CELERY_RESULT_BACKEND"
-            "GH_TOKEN"
+            "AWS_ACCESS_KEY_ID_DEV"
+            "AWS_SECRET_ACCESS_KEY_DEV"
+            "BUCKET_NAME_DEV"
+            "BUCKET_KEY_DEV"
+            "DB_PASSWORD_DEV"
+            "DJANGO_SECRET_KEY_DEV"
+            "DJANGO_DEBUG_DEV"
+            "AIRBNB_PUBLIC_API_KEY_DEV"
+            "POSTGRES_USER_DEV"
+            "POSTGRES_DB_DEV"
+            "POSTGRES_HOST_PORT_DEV"
+            "CELERY_BROKER_URL_DEV"
+            "CELERY_RESULT_BACKEND_DEV"
           )
-
+          
           MISSING=false
-
+          
           for secret in "${REQUIRED_SECRETS[@]}"; do
-            if [ -z "${{ secrets[secret] }}" ]; then
+            if ! echo "$SECRETS_CONTEXT" | jq -e --arg key "$secret" 'has($key)' >/dev/null; then
               echo "❌ Missing secret: $secret"
               MISSING=true
+            else
+              echo "✅ Found secret: $secret"
             fi
           done
-
+          
           if [ "$MISSING" = true ]; then
             echo "❌ One or more required secrets are missing. Failing workflow."
             exit 1
           else
             echo "✅ All required secrets are set."
           fi
-
   # Check if Terraform files have changed
   check-changes:
     needs: validate-secrets
@@ -87,8 +92,8 @@ jobs:
         if: needs.check-changes.outputs.terraform-changed == 'true'
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
           aws-region: us-east-1
 
       - name: Setup Terraform
@@ -98,11 +103,14 @@ jobs:
       - name: Terraform Init and Apply
         if: needs.check-changes.outputs.terraform-changed == 'true'
         env:
-          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD_DEV }}
         run: |
           cd terraform/dev
-          terraform init -backend-config="bucket=${{secrets.BUCKET_NAME}}" -backend-config="key=${{secrets.BUCKET_KEY}}" -backend-config="region=us-east-1"          
-          terraform apply -auto-approve
+          terraform init -backend-config="bucket=${{secrets.BUCKET_NAME_DEV}}" -backend-config="key=${{secrets.BUCKET_KEY_DEV}}" -backend-config="region=us-east-1"          
+          terraform apply -auto-approve \
+            -var="db_name_dev=${{ secrets.POSTGRES_DB_DEV }}" \
+            -var="db_user_dev=${{ secrets.POSTGRES_USER_DEV }}" \
+            -var="db_password_dev=${{ secrets.DB_PASSWORD_DEV }}"
 
       - name: Save Terraform outputs
         if: needs.check-changes.outputs.terraform-changed == 'true'
@@ -122,20 +130,20 @@ jobs:
         uses: hkusu/s3-upload-action@v2
         id: upload
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
           aws-region: 'us-east-1'
-          aws-bucket: ${{ secrets.BUCKET_NAME }}
+          aws-bucket: ${{ secrets.BUCKET_NAME_DEV }}
+          bucket-root: '/'
           # TODO: Need to change this variables are dynamic
-          destination-dir: 'terraform/dev/'
+          destination-dir: '/'
           file-path: './terraform/dev/tf_outputs.json'
           # TODO: Maybe should be false I think
-          output-file-url: 'true'
 
   # Deploy application (always runs, but waits for provision if it ran)
   deploy:
     runs-on: ubuntu-latest
-    needs: [check-changes, provision]
+    needs: [ check-changes, provision ]
 
     steps:
       - name: Checkout repository
@@ -150,14 +158,14 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
           aws-region: us-east-1
 
       - name: Download from S3
         # TODO: Again path should be dynamic or in a variable
         run: |
-          aws s3 cp s3://${{ secrets.BUCKET_NAME }}/artifacts/terraform/dev/tf_outputs.json ./tf_outputs.json
+          aws s3 cp s3://${{ secrets.BUCKET_NAME_DEV}}/tf_outputs.json ./tf_outputs.json
           echo "✅ Downloaded tf_outputs.json"
           ls -la tf_outputs.json
 
@@ -197,8 +205,6 @@ jobs:
           # TODO: Move the variables into a env file
           script: |
             echo "Connected to EC2 instance at ${{ steps.tf.outputs.ec2_ip }}"
-            git config --global credential.helper store
-            echo "https://username:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials 
             cd /home/ec2-user/
             echo "Checking if project directory exists..."
             if [ ! -d "airbnb-regulation" ]; then
@@ -208,20 +214,20 @@ jobs:
 
             cd airbnb-regulation
             echo "Pulling latest changes from main branch..."
-            git pull origin main
+            git pull origin dev
             
             echo "Creating .env file with environment variables..."
             cat <<EOF > .env
-            SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}"
-            DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG }}
-            AIRBNB_PUBLIC_API_KEY="${{ secrets.AIRBNB_PUBLIC_API_KEY }}"
-            POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}
-            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-            POSTGRES_URL=${{ steps.tf.outputs.rds_url }}
-            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-            POSTGRES_HOST_PORT=${{ secrets.POSTGRES_HOST_PORT }}
-            CELERY_BROKER_URL=${{ secrets.CELERY_BROKER_URL }}
-            CELERY_RESULT_BACKEND=${{ secrets.CELERY_RESULT_BACKEND }}
+            SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY_DEV }}"
+            DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG_DEV }}
+            AIRBNB_PUBLIC_API_KEY="${{ secrets.AIRBNB_PUBLIC_API_KEY_DEV }}"
+            POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD_DEV }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER_DEV }}
+            POSTGRES_URL=${{ steps.tf.outputs.rds_url}}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB_DEV }}
+            POSTGRES_HOST_PORT=${{ secrets.POSTGRES_HOST_PORT_DEV }}
+            CELERY_BROKER_URL=${{ secrets.CELERY_BROKER_URL_DEV }}
+            CELERY_RESULT_BACKEND=${{ secrets.CELERY_RESULT_BACKEND_DEV }}
             EOF
             echo ".env file created."
 
@@ -247,5 +253,8 @@ jobs:
 
             echo "Rebuilding and starting Docker containers..."
             docker-compose up -d --build
-
-            echo "Deployment process completed."
+            
+            echo "Setting up cron jobs..."
+            chmod +x scripts/setup_cron.sh
+            ./scripts/setup_cron.sh
+            echo "✅ Deployment process completed."

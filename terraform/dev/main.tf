@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket = ""
-    key    = """
+    key    = ""
     region = ""
   }
 }
@@ -50,9 +50,9 @@ resource "aws_db_instance" "mydb" {
   engine              = "postgres"
   instance_class      = "db.t3.micro"
   allocated_storage   = 20
-  db_name             = var.db_name
-  username            = var.db_user
-  password            = var.db_password
+  db_name             = var.db_name_dev
+  username            = var.db_user_dev
+  password            = var.db_password_dev
   skip_final_snapshot = true
   publicly_accessible = false
   # Security groups
