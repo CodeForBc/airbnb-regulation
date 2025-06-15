@@ -1,0 +1,292 @@
+name: CI/CD Pipeline Prod
+
+concurrency:
+  group: ci-${{ github.workflow }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  validate-secrets:
+    runs-on: ubuntu-latest
+    env:
+      SECRETS_CONTEXT: ${{ toJson(secrets) }}
+    steps:
+      - name: Validate required secrets
+        run: |
+          echo "🔍 Validating required secrets..."
+          
+          # Required secrets list (reduced - only AWS and S3 keys needed)
+          REQUIRED_SECRETS=(
+            "AWS_ACCESS_KEY_ID_PROD"
+            "AWS_SECRET_ACCESS_KEY_PROD"
+            "BUCKET_NAME_PROD"
+            "BUCKET_KEY_PROD"
+            "ENV_FILE_S3_KEY_PROD"
+          )
+          
+          MISSING=false
+          
+          for secret in "${REQUIRED_SECRETS[@]}"; do
+            if ! echo "$SECRETS_CONTEXT" | jq -e --arg key "$secret" 'has($key)' >/dev/null; then
+              echo "❌ Missing secret: $secret"
+              MISSING=true
+            else
+              echo "✅ Found secret: $secret"
+            fi
+          done
+          
+          if [ "$MISSING" = true ]; then
+            echo "❌ One or more required secrets are missing. Failing workflow."
+            exit 1
+          else
+            echo "✅ All required secrets are set."
+          fi
+
+  # Check if Terraform files have changed
+  check-changes:
+    needs: validate-secrets
+    runs-on: ubuntu-latest
+    outputs:
+      terraform-changed: ${{ steps.terraform-changes.outputs.changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for changes in Terraform directory
+        id: terraform-changes
+        run: |
+          echo "Checking for changes in terraform/prod..."
+          if git diff --name-only ${{ github.sha }} | grep -q '^terraform/prod/'; then
+            echo "Terraform files changed."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changes in terraform/prod."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+  # Provision infrastructure (only when terraform changes)
+  provision:
+    runs-on: ubuntu-latest
+    needs: check-changes
+    steps:
+      - name: Checkout
+        if: needs.check-changes.outputs.terraform-changed == 'true'
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        if: needs.check-changes.outputs.terraform-changed == 'true'
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        if: needs.check-changes.outputs.terraform-changed == 'true'
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Download environment file from S3
+        if: needs.check-changes.outputs.terraform-changed == 'true'
+        run: |
+          echo "Downloading environment file from S3..."
+          aws s3 cp s3://${{ secrets.BUCKET_NAME_PROD }}/${{ secrets.ENV_FILE_S3_KEY_PROD }} ./terraform_env.txt
+          echo "✅ Downloaded environment file"
+
+      - name: Load environment variables from S3 file
+        if: needs.check-changes.outputs.terraform-changed == 'true'
+        run: |
+          echo "Loading environment variables from S3 file..."
+          sed -i 's/\r$//' terraform_env.txt
+          while IFS='=' read -r key value; do
+            # Skip empty lines and comments
+            if [[ -n "$key" && ! "$key" =~ ^# ]]; then
+              echo "Setting $key"
+              echo "$key=$value" >> $GITHUB_ENV
+            fi
+          done < terraform_env.txt
+
+      - name: Terraform Init and Apply
+        if: needs.check-changes.outputs.terraform-changed == 'true'
+        run: |
+          cd terraform/prod
+          terraform init -backend-config="bucket=${{secrets.BUCKET_NAME_PROD}}" -backend-config="key=${{secrets.BUCKET_KEY_PROD}}" -backend-config="region=us-east-1"          
+          terraform apply -auto-approve \
+            -var="db_name_prod=$POSTGRES_DB" \
+            -var="db_user_prod=$POSTGRES_USER" \
+            -var="db_password_prod=$POSTGRES_PASSWORD"
+
+      - name: Save Terraform outputs
+        if: needs.check-changes.outputs.terraform-changed == 'true'
+        working-directory: terraform/prod
+        run: |
+          terraform output -json > tf_outputs.json
+          cat tf_outputs.json 
+
+      - name: Save Private Key
+        if: needs.check-changes.outputs.terraform-changed == 'true'
+        working-directory: terraform/prod
+        run: |
+          terraform output -raw private_key_pem > private_key.pem
+
+      - name: Upload secrets
+        if: needs.check-changes.outputs.terraform-changed == 'true'
+        uses: hkusu/s3-upload-action@v2
+        id: upload
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: 'us-east-1'
+          aws-bucket: ${{ secrets.BUCKET_NAME_PROD }}
+          bucket-root: '/'
+          destination-dir: '/'
+          file-path: './terraform/prod/tf_outputs.json'
+
+  # Deploy application (always runs, but waits for provision if it ran)
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [ check-changes, provision ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Print start message
+        run: |
+          echo "Starting EC2 deployment workflow..."
+          echo "Terraform changed: ${{ needs.check-changes.outputs.terraform-changed }}"
+          echo "Provision job result: ${{ needs.provision.result }}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: us-east-1
+
+      - name: Download Terraform outputs from S3
+        run: |
+          aws s3 cp s3://${{ secrets.BUCKET_NAME_PROD}}/tf_outputs.json ./tf_outputs.json
+          echo "✅ Downloaded tf_outputs.json"
+          ls -la tf_outputs.json
+
+      - name: Download environment file from S3
+        run: |
+          echo "Downloading environment file from S3..."
+          aws s3 cp s3://${{ secrets.BUCKET_NAME_PROD }}/${{ secrets.ENV_FILE_S3_KEY_PROD }} ./prod_env.txt
+          echo "✅ Downloaded environment file"
+          echo "Environment file contents (masked):"
+          sed 's/=.*/=***/' ./prod_env.txt
+
+      - name: Display tf_outputs.json content
+        run: cat ./tf_outputs.json
+
+      - name: Parse Terraform outputs
+        id: tf
+        run: |
+          ec2_ip=$(jq -r '.ec2_ip.value' ./tf_outputs.json)
+          rds_url=$(jq -r '.rds_endpoint.value' ./tf_outputs.json)
+          echo "Parsed EC2 IP: $ec2_ip"
+          echo "Parsed RDS URL: $rds_url"
+          echo "ec2_ip=$ec2_ip" >> $GITHUB_OUTPUT
+          echo "rds_url=$rds_url" >> $GITHUB_OUTPUT
+
+      - name: Read private key into environment variable
+        id: read_key
+        run: |
+          echo "Reading private key into environment variable..."
+          if jq -e '.private_key_pem.value' ./tf_outputs.json > /dev/null; then
+            echo "PRIVATE_KEY<<EOF" >> $GITHUB_ENV
+            jq -r '.private_key_pem.value' ./tf_outputs.json >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            echo "✅ Private key successfully added to environment variable."
+          else
+            echo "❌ Failed to parse private key from tf_outputs.json"
+            exit 1
+          fi
+
+      - name: Transfer environment file to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ steps.tf.outputs.ec2_ip }}
+          username: ec2-user
+          key: ${{ env.PRIVATE_KEY }}
+          source: "./prod_env.txt"
+          target: "/home/ec2-user/"
+
+      - name: Deploy to EC2 instance
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ steps.tf.outputs.ec2_ip }}
+          username: ec2-user
+          key: ${{ env.PRIVATE_KEY }}
+          script: |
+            echo "Connected to EC2 instance at ${{ steps.tf.outputs.ec2_ip }}"
+            cd /home/ec2-user/
+            echo "Checking if project directory exists..."
+            if [ ! -d "airbnb-regulation" ]; then
+              echo "Cloning project repository..."
+              git clone https://github.com/CodeForBc/airbnb-regulation
+            fi
+
+            cd airbnb-regulation
+            echo "Pulling latest changes from main branch..."
+            git pull origin main
+            
+            echo "Creating .env file from S3 environment file..."
+            if [ -f "/home/ec2-user/prod_env.txt" ]; then
+              # Copy the S3 environment file to .env
+              cp /home/ec2-user/prod_env.txt .env
+              
+              # Add dynamic values from Terraform outputs
+              echo "POSTGRES_URL=${{ steps.tf.outputs.rds_url}}" >> .env
+              
+              echo "✅ .env file created successfully from S3 configuration"
+              echo "Environment variables loaded:"
+              # Show keys only (not values) for security
+              grep -E '^[^#]' .env | cut -d'=' -f1 | sort
+              
+              # Clean up the temp file
+              rm -f /home/ec2-user/prod_env.txt
+            else
+              echo "❌ Environment file not found at /home/ec2-user/prod_env.txt"
+              exit 1
+            fi
+
+            # Check for running Celery tasks before deployment
+            if docker ps --format '{{.Names}}' | grep -q '^airbnb_celery$'; then
+              while true; do
+                result=$(docker exec airbnb_celery celery -A airbnb_project inspect active 2>&1)
+                echo "Celery active task output: $result"
+
+                if [[ "$result" == *"empty"* ]]; then
+                  echo "No active Celery tasks detected."
+                  break
+                fi
+
+                echo "Active Celery tasks found. Waiting..."
+                sleep 10
+              done
+            else
+              echo "Celery container 'airbnb_celery' is not running. Skipping task check."
+            fi
+
+            echo "Stopping Docker containers..."
+            docker-compose down
+
+            echo "Rebuilding and starting Docker containers..."
+            docker-compose up -d --build
+            
+            echo "Setting up cron jobs..."
+            chmod +x scripts/setup_cron.sh
+            ./scripts/setup_cron.sh
+            
+            echo "🎉 Deployment completed successfully!"
