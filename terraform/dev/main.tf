@@ -71,6 +71,19 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"] # SSH
   }
 
+  ingress {
+    from_port = 80
+    to_port   = 80
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # HTTP access
+  }
+
+  ingress {
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # HTTPS access
+  }
   egress {
     from_port = 0
     to_port   = 0
@@ -93,7 +106,9 @@ resource "aws_instance" "app" {
   user_data = <<-EOF
               #!/bin/bash
               yum update -y
-              yum install -y docker git
+              yum install -y docker git cronie
+              systemctl enable crond
+              systemctl start crond
               service docker start
               usermod -a -G docker ec2-user
               chkconfig docker on
