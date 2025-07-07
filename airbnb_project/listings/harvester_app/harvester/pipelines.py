@@ -8,7 +8,7 @@ import re
 
 from django.core.exceptions import ValidationError
 from itemadapter import ItemAdapter
-from listings.listing_models import Listing
+from listings.listing_models import Listing, ListingHost
 from django.db.utils import IntegrityError
 
 
@@ -106,15 +106,16 @@ class AirbnbListingsPipelineDataCleaner:
         adapter['baths'] = bathroom
 
 
+
 class DjangoORMPipeline:
     """
-       A Django ORM pipeline for processing and storing Airbnb listing data.
+    A Django ORM pipeline for processing and storing Airbnb listing and host data.
 
-       This pipeline handles the creation of new Listing objects in the database,
-       ensuring no duplicate listings are created based on the airbnb_listing_id.
-       All fields are required and must be present in the input item. The pipeline
-       includes error handling for database integrity issues and logging capabilities
-       for monitoring the data processing flow.
+    This pipeline handles the creation of new Listing and ListingHost objects in the database.
+    It ensures that no duplicate listings are created based on the airbnb_listing_id,
+    and that host data is correctly associated with each listing.
+    All fields are required and must be present in the input item. The pipeline includes
+    error handling for database integrity issues and logging capabilities for monitoring the data flow.
     """
 
     def process_item(self, item, spider):
@@ -136,6 +137,7 @@ class DjangoORMPipeline:
                 - location (str): Location description
                 - bath_is_shared (bool): Whether bathroom is shared
                 - baths_text (str): Textual description of bathroom facilities
+                - host information (dictionary with host details)
             spider: The spider instance that is running the crawl
 
         Returns:
@@ -145,13 +147,43 @@ class DjangoORMPipeline:
             - All fields are required - missing or empty airbnb_listing_id will cause the item to be logged and skipped
             - If a listing with the same airbnb_listing_id exists, it will be skipped
         """
+
         airbnb_listing_id = item.get('airbnb_listing_id', '')
 
         # Early return if no valid airbnb_listing_id
         if not airbnb_listing_id:
             spider.logger.error(f"Missing required airbnb_listing_id, skipping item, item Details\n{json.dumps(item)}")
             return item
+
+        # Extract host information from the item
+        host_info = {
+            'user_id': item.get('user_id'),
+            'name': item.get('host_name'),
+            'title_text': item.get('title_text'),
+            'profile_picture_url': item.get('profile_picture_url'),
+            'thumbnail_url': item.get('thumbnail_url'),
+            'is_verified': item.get('is_verified', False),
+            'is_superhost': item.get('is_superhost', False),
+            'rating_count': item.get('rating_count', 0),
+            'rating_average': item.get('rating_average', 0),
+            'time_as_host_years': item.get('time_as_host_years', 0),
+            'time_as_host_months': item.get('time_as_host_months', 0),
+        }
+
+        # Create or update the ListingHost if host information is available
+        host = None
+        if host_info['user_id']:
+            host, created = ListingHost.objects.get_or_create(
+                user_id=host_info['user_id'],
+                defaults=host_info
+            )
+            if created:
+                spider.logger.info(f"New host {host_info['user_id']} created.")
+            else:
+                spider.logger.info(f"Host {host_info['user_id']} already exists.")
+
         try:
+            # Create or update the Listing object
             listing = Listing(
                 airbnb_listing_id=item.get('airbnb_listing_id'),
                 name=item.get('name'),
@@ -165,11 +197,14 @@ class DjangoORMPipeline:
                 room_type=item.get('room_type'),
                 location=item.get('location'),
                 is_bath_shared=item.get('bath_is_shared'),
-                baths_text=item.get('baths_text')
+                baths_text=item.get('baths_text'),
+                host=host  # Link the host to the listing
             )
+
             # Save the listing to the database
             listing.save()
             spider.logger.info(f"New listing {item.get('airbnb_listing_id')} saved to the database.")
+
         except IntegrityError as e:
             spider.logger.error(f"Failed to save listing {item.get('airbnb_listing_id')} to the database: {e}")
         except Exception as e:
