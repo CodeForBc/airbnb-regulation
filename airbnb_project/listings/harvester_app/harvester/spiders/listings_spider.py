@@ -1,5 +1,6 @@
 import json
 import base64
+import re
 from typing import List, Dict, Any
 
 import scrapy
@@ -12,6 +13,33 @@ from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbUR
 from listings.harvester_app.harvester.spiders.coordinates_builder import AirbnbCoordinatesBuilder
 from listings.harvester_app.harvester.spiders.constants import Cities
 
+
+def extract_registration_numbers(text: str) -> str:
+    """
+    Extract Municipal and Provincial registration numbers from text.
+
+    Args:
+        text: Text containing registration information
+
+    Returns:
+        String in format "municipal;provincial" where empty values are represented as empty strings
+    """
+    # Pattern to extract Municipal registration number
+    municipal_pattern = r'Municipal registration number:\s*(\d+)'
+
+    # Pattern to extract Provincial registration number
+    provincial_pattern = r'Provincial registration number:\s*([A-Z0-9]+)'
+
+    # Search for both patterns
+    municipal_match = re.search(municipal_pattern, text, re.IGNORECASE)
+    provincial_match = re.search(provincial_pattern, text, re.IGNORECASE)
+
+    # Extract values or use empty string if not found
+    municipal = municipal_match.group(1) if municipal_match else ""
+    provincial = provincial_match.group(1) if provincial_match else ""
+
+    # Format as requested
+    return f"{municipal};{provincial}"
 
 def base64_encode_string(input_string):
     """
@@ -80,7 +108,7 @@ class ListingsSpider(scrapy.Spider):
             Returns an empty list in case of an error.
         """
         try:
-            return ListingsSpider.COORDINATES_BUILDER.build_coordinates(Cities.VANCOUVER)
+            return ListingsSpider.COORDINATES_BUILDER.build_coordinates(Cities.KELOWNA)
         except Exception as e:
             print(f"Unexpected error: {e}")
             return []  # Catch-all for any other issues
@@ -424,42 +452,134 @@ class ListingsSpider(scrapy.Spider):
             listing_item['person_capacity'] = person_capacity
 
     @staticmethod
-    def _parse_listings_number(script_tag_json, listing_item):
+    def _parse_listings_number(data: str, listing_item) -> Dict[str, str]:
         """
-        Extract the registration number, number of beds, and number of baths from the provided JSON data.
-        """
-        registration_number = ""
-        number_of_beds = ""
-        number_of_baths = ""
-        try:
-            sections = ListingsSpider._parse_listing_json(script_tag_json)
-            for section in sections:
-                # Get registration number from description modal
-                if section.get("sectionId") == "DESCRIPTION_MODAL":
-                    items = section.get("section", {}).get("items", [])
-                    for item in items:
-                        if "Registration number" in item.get("title", ""):
-                            html_text = item.get("html", {}).get("htmlText", "")
-                            # Extract the number after "Municipal registration number: "
-                            if "Municipal registration number" in html_text:
-                                registration_number = \
-                                    html_text.split("Municipal registration number: ")[-1].split("<br")[0]
+        Extract title and registration numbers from Airbnb listing JSON.
 
-                # Get bed and bath info. This is fragile and depends on the text.
-                if section.get("sectionId") == "HIGHLIGHTS_DEFAULT":
-                    highlights = section.get("section", {}).get("highlights", [])
-                    for highlight in highlights:
-                        title = highlight.get("title", "")
-                        if "bed" in title.lower():
-                            number_of_beds = title
-                        if "bath" in title.lower():
-                            number_of_baths = title
+        Args:
+            json_file_path: Path to the JSON file
+
+        Returns:
+            Dictionary with extracted data
+        """
+        try:
+
+
+            # Initialize result dictionary
+            result = {
+                'title': '',
+                'registration_numbers': '',
+                'municipal_number': '',
+                'provincial_number': '',
+                'raw_registration_text': ''
+            }
+
+            # Navigate through the JSON structure to find the title
+            try:
+                title_section = data['data']['presentation']['stayProductDetailPage']['sections']['sections']
+
+                # Find the title section
+                for section in title_section:
+                    if section.get('sectionId') == 'TITLE_DEFAULT':
+                        result['title'] = section['section']['title']
+                        break
+            except (KeyError, TypeError) as e:
+                print(f"Warning: Could not extract title - {e}")
+
+            # Find registration details in the description modal
+            try:
+                for section in title_section:
+                    if section.get('sectionId') == 'DESCRIPTION_MODAL':
+                        items = section['section']['items']
+
+                        # Look for registration details section
+                        for item in items:
+                            if item.get('title') == 'Registration details':
+                                html_text = item['html']['htmlText']
+                                result['raw_registration_text'] = html_text
+
+                                # Extract registration numbers
+                                registration_numbers = extract_registration_numbers(html_text)
+                                result['registration_numbers'] = registration_numbers
+
+                                # Split for individual numbers
+                                municipal, provincial = registration_numbers.split(';')
+                                result['municipal_number'] = municipal
+                                result['provincial_number'] = provincial
+                                break
+                        break
+            except (KeyError, TypeError) as e:
+                print(f"Warning: Could not extract registration numbers - {e}")
+
+            finally:
+                listing_item["beds"] = ""
+                listing_item["baths_text"] = ""
+                listing_item["registration_number"] = result['registration_numbers']
+        except json.JSONDecodeError as e:
+            print(f"Error: Invalid JSON format - {e}")
+            return {}
         except Exception as e:
-            print("Exception occurred:", e)
-        finally:
-            listing_item["beds"] = number_of_beds
-            listing_item["baths_text"] = number_of_baths
-            listing_item["registration_number"] = registration_number
+            print(f"Error: Unexpected error - {e}")
+            return {}
+    #
+    # @staticmethod
+    # def _parse_listings_number(script_tag_json, listing_item):
+    #     """
+    #     Extract the registration number, number of beds, and number of baths from the provided JSON data.
+    #     """
+    #     registration_number = ""
+    #     number_of_beds = ""
+    #     number_of_baths = ""
+    #
+    #     try:
+    #         sections = ListingsSpider._parse_listing_json(script_tag_json)
+    #         print("sections_dump:", json.dumps(sections))
+    #         for section in sections:
+    #             # Get registration number from description modal
+    #             if section.get("sectionId") == "DESCRIPTION_MODAL":
+    #                 items = section.get("section", {}).get("items", [])
+    #                 print("Inside description sections")
+    #                 for item in items:
+    #                     print("title: ", item.get("title", ""))
+    #                     if "Registration" in item.get("title", ""):
+    #                         html_text = item.get("html", {}).get("htmlText", "")
+    #
+    #                         # Extract both registration numbers
+    #                         municipal_number = ""
+    #                         provincial_number = ""
+    #
+    #                         if "Municipal registration number" in html_text:
+    #                             municipal_number = html_text.split("Municipal registration number: ")[-1].split("<br")[
+    #                                 0].strip()
+    #
+    #                         if "Provincial registration number" in html_text:
+    #                             provincial_number = \
+    #                             html_text.split("Provincial registration number: ")[-1].split("<br")[0].strip()
+    #
+    #                         # Combine numbers with colon separator
+    #                         if municipal_number and provincial_number:
+    #                             registration_number = f"{municipal_number}:{provincial_number}"
+    #                         elif municipal_number:
+    #                             registration_number = municipal_number
+    #                         elif provincial_number:
+    #                             registration_number = provincial_number
+    #
+    #             # Get bed and bath info. This is fragile and depends on the text.
+    #             if section.get("sectionId") == "HIGHLIGHTS_DEFAULT":
+    #                 highlights = section.get("section", {}).get("highlights", [])
+    #                 for highlight in highlights:
+    #                     title = highlight.get("title", "")
+    #                     if "bed" in title.lower():
+    #                         number_of_beds = title
+    #                     if "bath" in title.lower():
+    #                         number_of_baths = title
+    #     except Exception as e:
+    #         print("Exception occurred:", e)
+    #     finally:
+    #         listing_item["beds"] = number_of_beds
+    #         listing_item["baths_text"] = number_of_baths
+    #         listing_item["registration_number"] = registration_number
+
 
     @staticmethod
     def _safe_get(data: dict, *keys, default=None):

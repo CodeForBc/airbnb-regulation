@@ -28,7 +28,7 @@ class AirBnbURLBuilder:
     ]
     SCHEME = "https"
     BASE_URL = "www.airbnb.ca"
-    HOMES_PATH = "s/Vancouver--Canada/homes"
+    HOMES_PATH = "s/Kelowna--Canada/homes"
     DEFAULT_PARAMS = {
         "ne_lat": {},
         "ne_lng": {},
@@ -39,8 +39,8 @@ class AirBnbURLBuilder:
         "search_by_map": "true",
         "tab_id": "home_tab",
         "refinement_paths[]": "/homes",
-        "query": "Vancouver, BC",
-        "place_id": "ChIJs0-pQ_FzhlQRi_OBm-qWkbs"
+        "query": "Kelowna, BC",
+        "place_id": "ChIJszDH47aMfVMR98S02j3l-E4"
     }
 
     @staticmethod
