@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:latest
-    container_name: airbnb_postgres_local
+    container_name: airbnb_postgres
     env_file:
       - .env
     environment:
@@ -24,7 +24,7 @@ services:
       retries: 15
 
   policies:
-    container_name: airbnb_policies_local
+    container_name: airbnb_policies
     build:
       context: ./  # Adjust if necessary
       dockerfile: Dockerfile
@@ -53,7 +53,7 @@ services:
       - airbnb_network
 
   listings:
-    container_name: airbnb_listings_local
+    container_name: airbnb_listings
     build:
       context: ./  # Adjust if necessary
       dockerfile: Dockerfile
@@ -96,7 +96,7 @@ services:
       timeout: 5s
       retries: 3
   celery:
-    container_name: airbnb_celery_local
+    container_name: airbnb_celery
     build:
       context: ./  # Adjust if necessary
       dockerfile: Dockerfile
