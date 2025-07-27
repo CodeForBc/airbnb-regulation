@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:16.4-bullseye
+    image: postgres:latest
     container_name: airbnb_postgres
     env_file:
       - .env
@@ -85,7 +85,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: redis
+    container_name: redis_local
     ports:
       - "6379:6379"
     networks:
