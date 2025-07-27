@@ -108,7 +108,7 @@ class ListingsSpider(scrapy.Spider):
             Returns an empty list in case of an error.
         """
         try:
-            return ListingsSpider.COORDINATES_BUILDER.build_coordinates(Cities.KELOWNA)
+            return ListingsSpider.COORDINATES_BUILDER.build_coordinates(Cities.VANCOUVER)
         except Exception as e:
             print(f"Unexpected error: {e}")
             return []  # Catch-all for any other issues
@@ -416,10 +416,44 @@ class ListingsSpider(scrapy.Spider):
             script_tag_json = json.loads(response.text)
             ListingsSpider._parse_capacity_and_location(script_tag_json, listing_item)
             ListingsSpider._parse_listings_number(script_tag_json, listing_item)
+            ListingsSpider._parse_host_id(script_tag_json, listing_item)
         except Exception as e:
             print(e)
         finally:
             yield listing_item
+
+    @staticmethod
+    def _parse_host_id(self, script_tag_json, listing_item) -> ExpandedAirBnBListingItem:
+        """
+        Handle the response from the listing detail page and extract host information.
+
+        Args:
+            response (Response): The response object from the listing detail page request.
+
+        Returns:
+            ExpandedAirBnBListingItem: The scraped listing item with host information.
+        """
+
+        sections = script_tag_json.get('data', {}).get('presentation', {}).get('stayProductDetailPage', {}).get('sections',
+                                                                                                            {}).get(
+            'sections', [])
+
+        host_info = {}
+        for section in sections:
+            if section.get('sectionId') == 'MEET_YOUR_HOST':
+                card_data = section.get('section', {}).get('cardData', {})
+                host_info = {
+                    'user_id': card_data.get('userId'),
+                    'host_name': card_data.get('name'),
+                    'profile_picture_url': card_data.get('profilePictureUrl'),
+                    'is_superhost': card_data.get('isSuperhost'),
+                }
+                break
+        listing_item['user_id'] = host_info['user_id']
+        listing_item['host_name'] = host_info['host_name']
+        listing_item['profile_picture_url'] = host_info['profile_picture_url']
+        listing_item['is_superhost'] = host_info['is_superhost']
+        return listing_item
 
     @staticmethod
     def _parse_capacity_and_location(script_tag_json, listing_item):
@@ -616,13 +650,13 @@ class ListingsSpider(scrapy.Spider):
         return (
             ListingsSpider._safe_get(
                 listings_json,
-                "niobeMinimalClientData", 0, 1, "data", "presentation", "staysSearch",
+                "niobeClientData", 0, 1, "data", "presentation", "staysSearch",
                 "results", "searchResults",
                 default=[]
             ),
             ListingsSpider._safe_get(
                 listings_json,
-                "niobeMinimalClientData", 0, 1, "data", "presentation", "staysSearch",
+                "niobeClientData", 0, 1, "data", "presentation", "staysSearch",
                 "mapResults", "staysInViewport",
                 default=[]
             )
