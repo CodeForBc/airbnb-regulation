@@ -1,5 +1,6 @@
 import json
 import base64
+import re
 from typing import List, Dict, Any
 
 import scrapy
@@ -12,6 +13,33 @@ from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbUR
 from listings.harvester_app.harvester.spiders.coordinates_builder import AirbnbCoordinatesBuilder
 from listings.harvester_app.harvester.spiders.constants import Cities
 
+
+def extract_registration_numbers(text: str) -> str:
+    """
+    Extract Municipal and Provincial registration numbers from text.
+
+    Args:
+        text: Text containing registration information
+
+    Returns:
+        String in format "municipal;provincial" where empty values are represented as empty strings
+    """
+    # Pattern to extract Municipal registration number
+    municipal_pattern = r'Municipal registration number:\s*(\d+)'
+
+    # Pattern to extract Provincial registration number
+    provincial_pattern = r'Provincial registration number:\s*([A-Z0-9]+)'
+
+    # Search for both patterns
+    municipal_match = re.search(municipal_pattern, text, re.IGNORECASE)
+    provincial_match = re.search(provincial_pattern, text, re.IGNORECASE)
+
+    # Extract values or use empty string if not found
+    municipal = municipal_match.group(1) if municipal_match else ""
+    provincial = provincial_match.group(1) if provincial_match else ""
+
+    # Format as requested
+    return f"{municipal};{provincial}"
 
 def base64_encode_string(input_string):
     """
@@ -131,7 +159,9 @@ class ListingsSpider(scrapy.Spider):
             Request: Request for the next page of search results, if available.
         """
         script_json = self._extract_script_json(response)
+        print("done 1")
         results = self._parse_listings_json(script_json)
+        print("done 2")
 
         if self.next_page_cursors is None:
             self.next_page_cursors = self._get_cursors(script_json)
@@ -170,13 +200,92 @@ class ListingsSpider(scrapy.Spider):
         Yields:
             Request: A request object for each listing's details page.
         """
-        for result in results:
+        results_one, results_two = results
+        for i in range(len(results_one)):
             try:
-                listing_data = self._extract_listing_data(result)
+                # Check if this is a split listing
+                if results_one[i].get('__typename') == 'ExploreSplitStaysListingItem':
+                    # Handle split listings
+                    async for request in self._process_split_listing(results_one[i]):
+                        yield request
+                else:
+                    # Handle regular listings
+                    listing_data = self._extract_listing_data(
+                        (results_one[i], results_two[i] if i < len(results_two) else None))
+                    print("testing if we have data", listing_data)
+                    if listing_data:
+                        yield self._create_listing_request(listing_data)
+            except Exception as e:
+                print(f"Exception processing listing: {e}")
+
+    def _extract_split_listing_data(self, stay: Dict[str, Any], split_listing_item: Dict[str, Any]) -> Dict[
+                                                                                                           str, Any] | None:
+        """
+        Extract relevant data from a single split listing stay.
+
+        Args:
+            stay (Dict[str, Any]): The individual stay within the split listing.
+            split_listing_item (Dict[str, Any]): The parent split listing item containing pricing info.
+
+        Returns:
+            Dict[str, Any]: A dictionary of extracted listing data, or None if the listing
+            should be skipped.
+        """
+        listing_id = stay.get("id")
+
+        if not listing_id:
+            print(f"Missing listing ID in split stay.\nStay: {json.dumps(stay)}")
+            return None
+
+        # For split listings, we need to handle the pricing differently
+        # The pricing info is in the parent split_listing_item
+        pricing_info = split_listing_item.get('structuredStayDisplayPrice', {})
+
+        # Extract check-in and check-out dates from listingParamOverrides
+        param_overrides = stay.get('listingParamOverrides', {})
+        checkin_date = param_overrides.get('checkin', '')
+        checkout_date = param_overrides.get('checkout', '')
+
+        return {
+            "airbnb_listing_id": listing_id,
+            "title": stay.get("title", ""),
+            "name": stay.get("name", ""),
+            "latitude": stay.get("lat", ""),
+            "longitude": stay.get("lng", ""),
+            "room_type": stay.get("pdpSubtitle", ""),
+            # Note: Host information is not available in split listings structure
+            "user_id": "",
+            "host_name": "",
+            "title_text": "",
+            "profile_picture_url": "",
+            "thumbnail_url": "",
+            "is_verified": False,
+            "is_superhost": False,
+            "rating_count": 0,
+            "rating_average": 0.0,
+            "time_as_host_years": "",
+            "time_as_host_months": ""
+        }
+
+    async def _process_split_listing(self, split_listing_item: Dict[str, Any]):
+        """
+        Process a split listing item which contains multiple individual listings.
+
+        Args:
+            split_listing_item (Dict[str, Any]): The split listing item containing multiple stays.
+
+        Yields:
+            Request: A request object for each individual listing in the split stay.
+        """
+        split_stays = split_listing_item.get('splitStaysListings', [])
+
+        for stay in split_stays:
+            try:
+                listing_data = self._extract_split_listing_data(stay, split_listing_item)
                 if listing_data:
                     yield self._create_listing_request(listing_data)
             except Exception as e:
-                print(f"Exception processing listing: {e}")
+                print(f"Exception processing split stay: {e}")
 
     def _extract_listing_data(self, result: Dict[str, Any]) -> Dict[str, Any] | None:
         """
@@ -192,21 +301,44 @@ class ListingsSpider(scrapy.Spider):
             Dict[str, Any]: A dictionary of extracted listing data, or None if the listing
             should be skipped.
         """
-        listing = result.get("listing", {})
-        listing_id: str = listing.get("id")
+        result_one, result_two = result
 
-        if not listing_id:
-            print(f"Missing listing ID.\nResults: {json.dumps(result)}")
+        # The primary listing data is in result_one
+        listing_info = result_one.get('demandStayListing', {})
+        listing_id_encoded = listing_info.get("id")
 
+        if not listing_id_encoded:
+            print(f"Missing listing ID.\nResults: {json.dumps(result_one)}")
+            return None
+
+        # Decode the base64 ID to get the numeric part
+        try:
+            decoded_id = base64.b64decode(listing_id_encoded).decode('utf-8')
+            listing_id = decoded_id.split(':')[-1]
+        except (TypeError, IndexError):
+            print(f"Could not decode or parse listing ID: {listing_id_encoded}")
             return None
 
         return {
             "airbnb_listing_id": listing_id,
-            "title": listing.get("title", ""),
-            "name": listing.get("name", ""),
-            "latitude": listing.get("coordinate", {}).get("latitude", ""),
-            "longitude": listing.get("coordinate", {}).get("longitude", ""),
-            "room_type": listing.get("roomTypeCategory", "")
+            "title": result_one.get("title", ""),
+            "name": self._safe_get(listing_info, "description", "name", "localizedStringWithTranslationPreference",
+                                   default=""),
+            "latitude": self._safe_get(listing_info, "location", "coordinate", "latitude", default=""),
+            "longitude": self._safe_get(listing_info, "location", "coordinate", "longitude", default=""),
+            "room_type": result_one.get("roomTypeCategory", ""),  # Using title as room_type as per analysis
+            "user_id": result_one.get("passportData", {}).get("userId", ""),
+            "host_name": result_one.get("passportData", {}).get("name", ""),
+            "titleText": result_one.get("passportData", {}).get("titleText", ""),
+            "profile_picture_url": result_one.get("passportData", {}).get("profilePictureUrl", ""),  # profilePictureUrl
+            "thumbnail_url": result_one.get("passportData", {}).get("thumbnailUrl", ""),  # thumbnailUrl
+            "is_verified": result_one.get("passportData", {}).get("isVerified", False),
+            "is_superhost": result_one.get("passportData", {}).get("isSuperhost", False),
+            "rating_count": result_one.get("passportData", {}).get("ratingCount", 0),
+            "rating_average": result_one.get("passportData", {}).get("ratingAverage", 0.0),
+            "time_as_host_years": result_one.get("passportData", {}).get("timeAsHost", {}).get("years", ""),
+            "time_as_host_months": result_one.get("passportData", {}).get("timeAsHost", {}).get("months", "")
+
         }
 
     def _create_listing_request(self, listing_data: Dict[str, Any]) -> Request:
@@ -266,37 +398,87 @@ class ListingsSpider(scrapy.Spider):
             name=airbnb_params.get('name'),
             latitude=airbnb_params.get('latitude'),
             longitude=airbnb_params.get('longitude'),
-            room_type=airbnb_params.get('room_type')
+            room_type=airbnb_params.get('room_type'),
+            # Host Information
+            user_id=airbnb_params.get("user_id"),
+            host_name=airbnb_params.get("host_name"),
+            title_text=airbnb_params.get("titleText"),
+            profile_picture_url=airbnb_params.get("profile_picture_url"),
+            thumbnail_url=airbnb_params.get("thumbnail_url"),
+            is_verified=airbnb_params.get("is_verified"),
+            is_superhost=airbnb_params.get("is_superhost"),
+            rating_count=airbnb_params.get("rating_count"),
+            rating_average=airbnb_params.get("rating_average"),
+            time_as_host_years=airbnb_params.get("time_as_host_years"),
+            time_as_host_months=airbnb_params.get("time_as_host_months"),
         )
         try:
             script_tag_json = json.loads(response.text)
             ListingsSpider._parse_capacity_and_location(script_tag_json, listing_item)
             ListingsSpider._parse_listings_number(script_tag_json, listing_item)
+            ListingsSpider._parse_host_id(script_tag_json, listing_item)
         except Exception as e:
             print(e)
         finally:
             yield listing_item
 
     @staticmethod
+    def _parse_host_id(self, script_tag_json, listing_item) -> ExpandedAirBnBListingItem:
+        """
+        Handle the response from the listing detail page and extract host information.
+
+        Args:
+            response (Response): The response object from the listing detail page request.
+
+        Returns:
+            ExpandedAirBnBListingItem: The scraped listing item with host information.
+        """
+
+        sections = script_tag_json.get('data', {}).get('presentation', {}).get('stayProductDetailPage', {}).get('sections',
+                                                                                                            {}).get(
+            'sections', [])
+
+        host_info = {}
+        for section in sections:
+            if section.get('sectionId') == 'MEET_YOUR_HOST':
+                card_data = section.get('section', {}).get('cardData', {})
+                host_info = {
+                    'user_id': card_data.get('userId'),
+                    'host_name': card_data.get('name'),
+                    'profile_picture_url': card_data.get('profilePictureUrl'),
+                    'is_superhost': card_data.get('isSuperhost'),
+                }
+                break
+        listing_item['user_id'] = host_info['user_id']
+        listing_item['host_name'] = host_info['host_name']
+        listing_item['profile_picture_url'] = host_info['profile_picture_url']
+        listing_item['is_superhost'] = host_info['is_superhost']
+        return listing_item
+
+    @staticmethod
     def _parse_capacity_and_location(script_tag_json, listing_item):
         """
         Extract the room capacity and location (City) of the listing from the provided JSON data.
-
-        Args:
-            script_tag_json (dict): The JSON data extracted from the script tag containing the listing metadata.
-            listing_item (dict): The dictionary representing a single listing, where parsed data will be stored.
-
-        Returns:
-            None: This method modifies the `listing_item` dictionary in place, adding 'location' and 'person_capacity'.
         """
         location = ""
         person_capacity = ""
         try:
-            metadata = ListingsSpider._get_metadata_from_json(script_tag_json)
-            if metadata is not None:
-                sharing_config = metadata.get("sharingConfig", {})
-                location = sharing_config.get("location", "")
-                person_capacity = sharing_config.get("personCapacity", "")
+            # Look for location and capacity in the sidebar and house rules
+            sidebar = ListingsSpider._safe_get(script_tag_json, "data", "presentation", "stayProductDetailPage",
+                                               "sidebar", "bookItSidebar", default={})
+            person_capacity = sidebar.get("maxGuestCapacity", "")
+
+            sections = ListingsSpider._parse_listing_json(script_tag_json)
+            for section in sections:
+                if ListingsSpider._safe_get(section, "sectionId") == "LOCATION_DEFAULT":
+                    location = ListingsSpider._safe_get(section, "section", "subtitle", default="")
+                # Fallback for person_capacity from house rules if not in sidebar
+                if not person_capacity and ListingsSpider._safe_get(section, "sectionId") == "POLICIES_DEFAULT":
+                    house_rules = ListingsSpider._safe_get(section, "section", "houseRules", default=[])
+                    for rule in house_rules:
+                        if "guests maximum" in rule.get("title", ""):
+                            person_capacity = rule.get("title").split(" ")[0]
+
         except Exception as e:
             print(e)
         finally:
@@ -304,44 +486,134 @@ class ListingsSpider(scrapy.Spider):
             listing_item['person_capacity'] = person_capacity
 
     @staticmethod
-    def _parse_listings_number(script_tag_json, listing_item):
+    def _parse_listings_number(data: str, listing_item) -> Dict[str, str]:
         """
-        Extract the registration number, number of beds, and number of baths from the provided JSON data.
+        Extract title and registration numbers from Airbnb listing JSON.
 
         Args:
-            script_tag_json (dict): The JSON data extracted from the script tag containing the listing details.
-            listing_item (dict): The dictionary representing a single listing, where parsed data will be stored.
+            json_file_path: Path to the JSON file
 
         Returns:
-            None: This method modifies the `listing_item` dictionary in place, adding 'registration_number', 'beds', and 'baths_text'.
+            Dictionary with extracted data
         """
-        registration_number = ""
-        number_of_beds = ""
-        number_of_baths = ""
         try:
-            sections = ListingsSpider._parse_listing_json(script_tag_json)
-            for section in sections:
-                if section.get("sectionComponentType") == "PDP_DESCRIPTION_MODAL":
-                    items = section.get("section", {}).get("items", [])
-                    for item in items:
-                        if item.get("title") == "Registration number":
-                            registration_number = item.get("html", "").get(
-                                "htmlText", "")
-                            print("regis", registration_number)
-                if section.get("sectionComponentType") == "AVAILABILITY_CALENDAR_DEFAULT":
-                    items = section.get("section", {}).get("descriptionItems", [])
-                    for item in items:
-                        title = item.get("title", "")
-                        if "bed" in title:
-                            number_of_beds = title
-                        if "bath" in title:
-                            number_of_baths = title
+
+
+            # Initialize result dictionary
+            result = {
+                'title': '',
+                'registration_numbers': '',
+                'municipal_number': '',
+                'provincial_number': '',
+                'raw_registration_text': ''
+            }
+
+            # Navigate through the JSON structure to find the title
+            try:
+                title_section = data['data']['presentation']['stayProductDetailPage']['sections']['sections']
+
+                # Find the title section
+                for section in title_section:
+                    if section.get('sectionId') == 'TITLE_DEFAULT':
+                        result['title'] = section['section']['title']
+                        break
+            except (KeyError, TypeError) as e:
+                print(f"Warning: Could not extract title - {e}")
+
+            # Find registration details in the description modal
+            try:
+                for section in title_section:
+                    if section.get('sectionId') == 'DESCRIPTION_MODAL':
+                        items = section['section']['items']
+
+                        # Look for registration details section
+                        for item in items:
+                            if item.get('title') == 'Registration details':
+                                html_text = item['html']['htmlText']
+                                result['raw_registration_text'] = html_text
+
+                                # Extract registration numbers
+                                registration_numbers = extract_registration_numbers(html_text)
+                                result['registration_numbers'] = registration_numbers
+
+                                # Split for individual numbers
+                                municipal, provincial = registration_numbers.split(';')
+                                result['municipal_number'] = municipal
+                                result['provincial_number'] = provincial
+                                break
+                        break
+            except (KeyError, TypeError) as e:
+                print(f"Warning: Could not extract registration numbers - {e}")
+
+            finally:
+                listing_item["beds"] = ""
+                listing_item["baths_text"] = ""
+                listing_item["registration_number"] = result['registration_numbers']
+        except json.JSONDecodeError as e:
+            print(f"Error: Invalid JSON format - {e}")
+            return {}
         except Exception as e:
-            print("Exception occurred:", e)
-        finally:
-            listing_item["beds"] = number_of_beds
-            listing_item["baths_text"] = number_of_baths
-            listing_item["registration_number"] = registration_number
+            print(f"Error: Unexpected error - {e}")
+            return {}
+    #
+    # @staticmethod
+    # def _parse_listings_number(script_tag_json, listing_item):
+    #     """
+    #     Extract the registration number, number of beds, and number of baths from the provided JSON data.
+    #     """
+    #     registration_number = ""
+    #     number_of_beds = ""
+    #     number_of_baths = ""
+    #
+    #     try:
+    #         sections = ListingsSpider._parse_listing_json(script_tag_json)
+    #         print("sections_dump:", json.dumps(sections))
+    #         for section in sections:
+    #             # Get registration number from description modal
+    #             if section.get("sectionId") == "DESCRIPTION_MODAL":
+    #                 items = section.get("section", {}).get("items", [])
+    #                 print("Inside description sections")
+    #                 for item in items:
+    #                     print("title: ", item.get("title", ""))
+    #                     if "Registration" in item.get("title", ""):
+    #                         html_text = item.get("html", {}).get("htmlText", "")
+    #
+    #                         # Extract both registration numbers
+    #                         municipal_number = ""
+    #                         provincial_number = ""
+    #
+    #                         if "Municipal registration number" in html_text:
+    #                             municipal_number = html_text.split("Municipal registration number: ")[-1].split("<br")[
+    #                                 0].strip()
+    #
+    #                         if "Provincial registration number" in html_text:
+    #                             provincial_number = \
+    #                             html_text.split("Provincial registration number: ")[-1].split("<br")[0].strip()
+    #
+    #                         # Combine numbers with colon separator
+    #                         if municipal_number and provincial_number:
+    #                             registration_number = f"{municipal_number}:{provincial_number}"
+    #                         elif municipal_number:
+    #                             registration_number = municipal_number
+    #                         elif provincial_number:
+    #                             registration_number = provincial_number
+    #
+    #             # Get bed and bath info. This is fragile and depends on the text.
+    #             if section.get("sectionId") == "HIGHLIGHTS_DEFAULT":
+    #                 highlights = section.get("section", {}).get("highlights", [])
+    #                 for highlight in highlights:
+    #                     title = highlight.get("title", "")
+    #                     if "bed" in title.lower():
+    #                         number_of_beds = title
+    #                     if "bath" in title.lower():
+    #                         number_of_baths = title
+    #     except Exception as e:
+    #         print("Exception occurred:", e)
+    #     finally:
+    #         listing_item["beds"] = number_of_beds
+    #         listing_item["baths_text"] = number_of_baths
+    #         listing_item["registration_number"] = registration_number
+
 
     @staticmethod
     def _safe_get(data: dict, *keys, default=None):
@@ -360,8 +632,8 @@ class ListingsSpider(scrapy.Spider):
             for key in keys:
                 data = data[key]
             return data
-        except KeyError or TypeError:
-            print("data", data, keys)
+        except (KeyError, TypeError, IndexError):
+            # print("data", data, keys) # This can be very verbose, uncomment for debugging
             return default
 
     @staticmethod
@@ -375,9 +647,20 @@ class ListingsSpider(scrapy.Spider):
         Returns:
             list: A list of listings extracted from the JSON object.
         """
-        return ListingsSpider._safe_get(listings_json,
-                                        "niobeMinimalClientData", 0, 1, "data", "presentation", "staysSearch",
-                                        "results", "searchResults", default=[])
+        return (
+            ListingsSpider._safe_get(
+                listings_json,
+                "niobeClientData", 0, 1, "data", "presentation", "staysSearch",
+                "results", "searchResults",
+                default=[]
+            ),
+            ListingsSpider._safe_get(
+                listings_json,
+                "niobeClientData", 0, 1, "data", "presentation", "staysSearch",
+                "mapResults", "staysInViewport",
+                default=[]
+            )
+        )
 
     @staticmethod
     def _parse_listing_json(listing_json):
@@ -398,7 +681,7 @@ class ListingsSpider(scrapy.Spider):
     def _get_metadata_from_json(listing_json: dict):
         return ListingsSpider._safe_get(listing_json, "data", "presentation",
                                         "stayProductDetailPage",
-                                        "sections", "metadata", default=[])
+                                        "sections", "metadata", default={})
 
     @staticmethod
     def _get_cursors(script_json):

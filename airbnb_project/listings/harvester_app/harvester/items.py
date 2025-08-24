@@ -28,21 +28,28 @@ class ExpandedAirBnBListingItem(AirBnBListingItem):
     """
     Item class representing an expanded Airbnb listing with additional details.
 
-    This class inherits from AirBnBListingItem and includes extra fields that
-    provide more detailed information about the listing. These additional fields
-    are typically available on individual listing pages or in detailed search results.
+    This class defines attributes related to both the listing and the host, which are typically
+    available on individual listing pages or in detailed search results.
 
     Attributes:
-        location (scrapy.Field): The specific location or neighborhood of the listing.
-        room_type (scrapy.Field): The type of room (e.g., entire home, private room).
-        person_capacity (scrapy.Field): The maximum number of guests the listing can accommodate.
-        baths (scrapy.Field): The number of bathrooms in the listing.
-        beds (scrapy.Field): The number of beds in the listing.
-        baths_text (scrapy.Field): Textual description of the bathroom facilities.
-        bath_is_shared (scrapy.Field): Boolean indicating if the bathroom is shared.
-
-    Inherited Attributes:
-        All attributes from AirBnBListingItem are also available in this class.
+        location (scrapy.Field): The specific location or neighborhood of the listing (string).
+        room_type (scrapy.Field): The type of room (e.g., entire home, private room) (string).
+        person_capacity (scrapy.Field): The maximum number of guests the listing can accommodate (int).
+        baths (scrapy.Field): The number of bathrooms in the listing (int).
+        beds (scrapy.Field): The number of beds in the listing (int).
+        baths_text (scrapy.Field): Textual description of the bathroom facilities (string).
+        bath_is_shared (scrapy.Field): Boolean indicating if the bathroom is shared (bool).
+        user_id (scrapy.Field): User ID from PassportData (big integer).
+        name (scrapy.Field): The name of the user (string).
+        title_text (scrapy.Field): The title text associated with the listing (string).
+        profile_picture_url (scrapy.Field): The profile picture URL of the user (string).
+        thumbnail_url (scrapy.Field): The thumbnail URL of the listing (string).
+        is_verified (scrapy.Field): Boolean indicating if the listing is verified (bool).
+        is_superhost (scrapy.Field): Boolean indicating if the host is a superhost (bool).
+        rating_count (scrapy.Field): The number of ratings for the listing (int).
+        rating_average (scrapy.Field): The average rating for the listing (float).
+        time_as_host_years (scrapy.Field): The years part of the host's time as a host (int).
+        time_as_host_months (scrapy.Field): The months part of the host's time as a host (int).
     """
     location = scrapy.Field()
     room_type = scrapy.Field()
@@ -51,3 +58,15 @@ class ExpandedAirBnBListingItem(AirBnBListingItem):
     beds = scrapy.Field()
     baths_text = scrapy.Field()
     bath_is_shared = scrapy.Field()
+    user_id = scrapy.Field()  # userId from PassportData
+    host_name = scrapy.Field()  # The name of the user
+    title_text = scrapy.Field()  # titleText from PassportData
+    profile_picture_url = scrapy.Field()  # profilePictureUrl
+    thumbnail_url = scrapy.Field()  # thumbnailUrl
+    is_verified = scrapy.Field()  # isVerified
+    is_superhost = scrapy.Field()  # isSuperhost
+    rating_count = scrapy.Field()  # ratingCount
+    rating_average = scrapy.Field()  # ratingAverage
+    time_as_host_years = scrapy.Field()  # years part of timeAsHost
+    time_as_host_months = scrapy.Field()  # months part of timeAsHost
+
