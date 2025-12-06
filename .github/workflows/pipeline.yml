@@ -117,7 +117,6 @@ jobs:
         working-directory: terraform/dev
         run: |
           terraform output -json > tf_outputs.json
-          cat tf_outputs.json 
 
       - name: Save Private Key
         if: needs.check-changes.outputs.terraform-changed == 'true'
@@ -168,9 +167,6 @@ jobs:
           aws s3 cp s3://${{ secrets.BUCKET_NAME_DEV}}/tf_outputs.json ./tf_outputs.json
           echo "✅ Downloaded tf_outputs.json"
           ls -la tf_outputs.json
-
-      - name: Display tf_outputs.json content
-        run: cat ./tf_outputs.json
 
       - name: Parse Terraform outputs
         id: tf
