@@ -129,7 +129,6 @@ jobs:
         working-directory: terraform/prod
         run: |
           terraform output -json > tf_outputs.json
-          cat tf_outputs.json 
 
       - name: Save Private Key
         if: needs.check-changes.outputs.terraform-changed == 'true'
@@ -185,9 +184,6 @@ jobs:
           echo "✅ Downloaded environment file"
           echo "Environment file contents (masked):"
           sed 's/=.*/=***/' ./prod_env.txt
-
-      - name: Display tf_outputs.json content
-        run: cat ./tf_outputs.json
 
       - name: Parse Terraform outputs
         id: tf
