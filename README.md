@@ -35,12 +35,12 @@ all machines that use the project, both during development and in production.
 
 To make sure virtual env is created in project's root directory
 ```bash
-$ poetry config virtualenvs.in-project true
+poetry config virtualenvs.in-project true
 ```
 
 To confirm the config has been changed, it can be checked with 
 ```bash
-$ poetry config --list
+poetry config --list
 ```
 
 > Please note if a virtual environment has already been created under `{cache-dir}/virtualenvs`, setting this to `true` will not cause poetry to create or use a local virtual environment.
@@ -56,37 +56,37 @@ To install all dependencies into an isolated virtual environment:
 > Append `--sync` to uninstall dependencies that are no longer in use from the virtual environment.
 
 ```bash
-$ poetry install
+poetry install
 ```
 
 To [activate](https://python-poetry.org/docs/basic-usage#activating-the-virtual-environment) the
 virtual environment that is automatically created by Poetry:
 
 ```bash
-$ poetry shell
+source $(poetry env info --path)/bin/activate
 ```
 
 To deactivate the environment:
 
 ```bash
-$ exit
+exit
 ```
 
 To upgrade all dependencies to their latest versions:
 
 ```bash
-$ poetry update
+poetry update
 ```
 
 To add dependency:
 
 ```bash
-$ poetry add <dependency_name>
+poetry add <dependency_name>
 ```
 
 To add development dependency:
 ```bash
-$ poetry add -G dev <dependency_name>
+poetry add -G dev <dependency_name>
 ```
 
 ## References

@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "This project aims to flag Airbnb listings that violates BC short-term rental policy."
 authors = ["Nam, Mangat, Tony"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 django = "^5.0.6"
