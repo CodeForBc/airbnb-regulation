@@ -25,10 +25,10 @@ def extract_registration_numbers(text: str) -> str:
         String in format "municipal;provincial" where empty values are represented as empty strings
     """
     # Pattern to extract Municipal registration number
-    municipal_pattern = r'Municipal registration number:\s*(\d+)'
+    municipal_pattern = r'Municipal registration number:\s*([A-Z0-9-]+)'
 
     # Pattern to extract Provincial registration number
-    provincial_pattern = r'Provincial registration number:\s*([A-Z0-9]+)'
+    provincial_pattern = r'Provincial registration number:\s*([A-Z0-9-]+)'
 
     # Search for both patterns
     municipal_match = re.search(municipal_pattern, text, re.IGNORECASE)
