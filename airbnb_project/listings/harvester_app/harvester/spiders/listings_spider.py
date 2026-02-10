@@ -11,7 +11,7 @@ from scrapy.http import Response
 from urllib.parse import quote
 from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
 from listings.harvester_app.harvester.spiders.coordinates_builder import AirbnbCoordinatesBuilder
-from listings.harvester_app.harvester.spiders.constants import Cities
+from listings.harvester_app.harvester.spiders.constants import Cities   
 
 
 def extract_registration_numbers(text: str) -> str:
@@ -25,7 +25,7 @@ def extract_registration_numbers(text: str) -> str:
         String in format "municipal;provincial" where empty values are represented as empty strings
     """
     # Pattern to extract Municipal registration number
-    municipal_pattern = r'Municipal registration number:\s*([A-Z0-9-]+)'
+    municipal_pattern = r'Municipal registration number:\s*#?([\w-]+)'
 
     # Pattern to extract Provincial registration number
     provincial_pattern = r'Provincial registration number:\s*([A-Z0-9-]+)'
@@ -34,9 +34,14 @@ def extract_registration_numbers(text: str) -> str:
     municipal_match = re.search(municipal_pattern, text, re.IGNORECASE)
     provincial_match = re.search(provincial_pattern, text, re.IGNORECASE)
 
+
     # Extract values or use empty string if not found
     municipal = municipal_match.group(1) if municipal_match else ""
     provincial = provincial_match.group(1) if provincial_match else ""
+
+    print("municipal registration number", municipal)
+    print("provincial registration number", provincial)
+    print("text", text)
 
     # Format as requested
     return f"{municipal};{provincial}"
