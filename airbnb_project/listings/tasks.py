@@ -26,9 +26,9 @@ def run_spider():
     runner = CrawlerProcess(settings=get_harvester_settings())
     runner.crawl(ListingsSpider)
     runner.start(stop_after_crawl=False)
+    
 
-
-@shared_task(bind=True, retry_kwargs={'max_retries': 1}, ignore_result=True, time_limit=1800, soft_time_limit=1600)
+@shared_task(bind=True, retry_kwargs={'max_retries': 1}, ignore_result=True, time_limit=3600, soft_time_limit=3400)
 def run_harvest_task(self):
     """
     Celery task to trigger the Scrapy spider for harvesting listings.
