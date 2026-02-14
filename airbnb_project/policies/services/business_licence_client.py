@@ -138,12 +138,17 @@ class BusinessLicenceClient:
             1. Given licence number "24-159412", return "Issued".
             2. Given licence number "24-243792", return "Cancelled".
         """
+        if(licence_number):
+            licence_numbers_municipal = licence_number.split(';')[0]
 
-        params = self._merge_query_parameters(
-            self._filter_by_short_term_rental_business(),
-            self._filter_by_licence_number(licence_number),
-            self._get_latest_licence_status(),
-        )
-        response_data = self._make_request(params)
+            params = self._merge_query_parameters(
+                self._filter_by_short_term_rental_business(),
+                self._filter_by_licence_number(licence_numbers_municipal),
+                self._get_latest_licence_status(),
+            )
+            response_data = self._make_request(params)
 
-        return self._process_licence_status_results(response_data)
+            return self._process_licence_status_results(response_data)
+        else:
+            logging.warning("Licence number is empty.")
+            return "notFound"

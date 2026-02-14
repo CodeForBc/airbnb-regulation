@@ -119,3 +119,9 @@ docker compose up -d --build --force-recreate
 ```
 docker logs -f --tail 50 <container_name>
 ```
+
+* Connect to RDS: `psql "host=myapp-db.XXXX.us-east-1.rds.amazonaws.com port=5432 dbname=airbnb_db user=postgres sslmode=require"`
+
+* Connect to specific db: `\c mydb`
+* List all tables: `\dt`
+* Describe a table: `\d <table_name>`
