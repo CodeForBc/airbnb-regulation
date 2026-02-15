@@ -1,4 +1,5 @@
 import json
+import logging
 import base64
 import re
 from typing import List, Dict, Any
@@ -12,6 +13,8 @@ from urllib.parse import quote
 from listings.harvester_app.harvester.spiders.airbnb_url_builder import AirBnbURLBuilder
 from listings.harvester_app.harvester.spiders.coordinates_builder import AirbnbCoordinatesBuilder
 from listings.harvester_app.harvester.spiders.constants import Cities   
+
+logger = logging.getLogger(__name__)
 
 
 def extract_registration_numbers(text: str) -> str:
@@ -39,9 +42,9 @@ def extract_registration_numbers(text: str) -> str:
     municipal = municipal_match.group(1) if municipal_match else ""
     provincial = provincial_match.group(1) if provincial_match else ""
 
-    print("municipal registration number", municipal)
-    print("provincial registration number", provincial)
-    print("text", text)
+    logger.debug(f"municipal registration number: {municipal}")
+    logger.debug(f"provincial registration number: {provincial}")
+    logger.debug(f"text: {text}")
 
     # Format as requested
     return f"{municipal};{provincial}"
@@ -115,7 +118,7 @@ class ListingsSpider(scrapy.Spider):
         try:
             return ListingsSpider.COORDINATES_BUILDER.build_coordinates(Cities.VANCOUVER)
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            self.logger.error(f"Unexpected error loading coordinates: {e}", exc_info=True)
             return []  # Catch-all for any other issues
 
     def _generate_requests(self, coordinates: List[Dict[str, float]]) -> List[scrapy.FormRequest]:
@@ -164,9 +167,9 @@ class ListingsSpider(scrapy.Spider):
             Request: Request for the next page of search results, if available.
         """
         script_json = self._extract_script_json(response)
-        print("done 1")
+        self.logger.debug("Extracted script JSON")
         results = self._parse_listings_json(script_json)
-        print("done 2")
+        self.logger.debug("Parsed listings JSON")
 
         if self.next_page_cursors is None:
             self.next_page_cursors = self._get_cursors(script_json)
@@ -217,11 +220,11 @@ class ListingsSpider(scrapy.Spider):
                     # Handle regular listings
                     listing_data = self._extract_listing_data(
                         (results_one[i], results_two[i] if i < len(results_two) else None))
-                    print("testing if we have data", listing_data)
+                    self.logger.debug(f"Extracted listing data: {listing_data}")
                     if listing_data:
                         yield self._create_listing_request(listing_data)
             except Exception as e:
-                print(f"Exception processing listing: {e}")
+                self.logger.error(f"Exception processing listing at index {i}: {e}", exc_info=True)
 
     def _extract_split_listing_data(self, stay: Dict[str, Any], split_listing_item: Dict[str, Any]) -> Dict[
                                                                                                            str, Any] | None:
@@ -239,7 +242,7 @@ class ListingsSpider(scrapy.Spider):
         listing_id = stay.get("id")
 
         if not listing_id:
-            print(f"Missing listing ID in split stay.\nStay: {json.dumps(stay)}")
+            self.logger.warning(f"Missing listing ID in split stay.\nStay: {json.dumps(stay)}")
             return None
 
         # For split listings, we need to handle the pricing differently
@@ -259,7 +262,7 @@ class ListingsSpider(scrapy.Spider):
             "longitude": stay.get("lng", ""),
             "room_type": stay.get("pdpSubtitle", ""),
             # Note: Host information is not available in split listings structure
-            "user_id": "",
+            "user_id": None,
             "host_name": "",
             "title_text": "",
             "profile_picture_url": "",
@@ -268,8 +271,8 @@ class ListingsSpider(scrapy.Spider):
             "is_superhost": False,
             "rating_count": 0,
             "rating_average": 0.0,
-            "time_as_host_years": "",
-            "time_as_host_months": ""
+            "time_as_host_years": None,
+            "time_as_host_months": None
         }
 
     async def _process_split_listing(self, split_listing_item: Dict[str, Any]):
@@ -290,7 +293,28 @@ class ListingsSpider(scrapy.Spider):
                 if listing_data:
                     yield self._create_listing_request(listing_data)
             except Exception as e:
-                print(f"Exception processing split stay: {e}")
+                self.logger.error(f"Exception processing split stay: {e}", exc_info=True)
+
+    @staticmethod
+    def _decode_base64_id(encoded_id: Any) -> str:
+        """
+        Decodes a base64 encoded ID (e.g., 'DemandUser:12345') and returns the numeric part.
+        """
+        if not encoded_id:
+            return ""
+
+        encoded_str = str(encoded_id)
+        if encoded_str.isdigit():
+            return encoded_str
+
+        try:
+            decoded = base64.b64decode(encoded_str).decode('utf-8')
+            if ':' in decoded:
+                return decoded.split(':')[-1]
+            return decoded
+        except Exception as e:
+            logger.warning(f"Could not decode ID {encoded_id}: {e}")
+            return ""
 
     def _extract_listing_data(self, result: Dict[str, Any]) -> Dict[str, Any] | None:
         """
@@ -307,13 +331,19 @@ class ListingsSpider(scrapy.Spider):
             should be skipped.
         """
         result_one, result_two = result
+        self.logger.debug(f'inside _extract_listing_data result_one: {result_one}')
+        self.logger.debug(f'inside _extract_listing_data result_two: {result_two}')
+
+        if not result_one:
+            self.logger.warning("Received None for result_one in _extract_listing_data")
+            return None
 
         # The primary listing data is in result_one
         listing_info = result_one.get('demandStayListing', {})
         listing_id_encoded = listing_info.get("id")
 
         if not listing_id_encoded:
-            print(f"Missing listing ID.\nResults: {json.dumps(result_one)}")
+            self.logger.warning(f"Missing listing ID.\nResults: {json.dumps(result_one)}")
             return None
 
         # Decode the base64 ID to get the numeric part
@@ -321,8 +351,11 @@ class ListingsSpider(scrapy.Spider):
             decoded_id = base64.b64decode(listing_id_encoded).decode('utf-8')
             listing_id = decoded_id.split(':')[-1]
         except (TypeError, IndexError):
-            print(f"Could not decode or parse listing ID: {listing_id_encoded}")
+            self.logger.warning(f"Could not decode or parse listing ID: {listing_id_encoded}")
             return None
+
+        passport_data = result_one.get("passportData") or {}
+        time_as_host = passport_data.get("timeAsHost") or {}
 
         return {
             "airbnb_listing_id": listing_id,
@@ -332,18 +365,17 @@ class ListingsSpider(scrapy.Spider):
             "latitude": self._safe_get(listing_info, "location", "coordinate", "latitude", default=""),
             "longitude": self._safe_get(listing_info, "location", "coordinate", "longitude", default=""),
             "room_type": result_one.get("roomTypeCategory", ""),  # Using title as room_type as per analysis
-            "user_id": result_one.get("passportData", {}).get("userId", ""),
-            "host_name": result_one.get("passportData", {}).get("name", ""),
-            "titleText": result_one.get("passportData", {}).get("titleText", ""),
-            "profile_picture_url": result_one.get("passportData", {}).get("profilePictureUrl", ""),  # profilePictureUrl
-            "thumbnail_url": result_one.get("passportData", {}).get("thumbnailUrl", ""),  # thumbnailUrl
-            "is_verified": result_one.get("passportData", {}).get("isVerified", False),
-            "is_superhost": result_one.get("passportData", {}).get("isSuperhost", False),
-            "rating_count": result_one.get("passportData", {}).get("ratingCount", 0),
-            "rating_average": result_one.get("passportData", {}).get("ratingAverage", 0.0),
-            "time_as_host_years": result_one.get("passportData", {}).get("timeAsHost", {}).get("years", ""),
-            "time_as_host_months": result_one.get("passportData", {}).get("timeAsHost", {}).get("months", "")
-
+            "user_id": int(ListingsSpider._decode_base64_id(passport_data.get("userId", ""))) if len(ListingsSpider._decode_base64_id(passport_data.get("userId", ""))) > 0 else None,
+            "host_name": passport_data.get("name", ""),
+            "titleText": passport_data.get("titleText", ""),
+            "profile_picture_url": passport_data.get("profilePictureUrl", ""),  # profilePictureUrl
+            "thumbnail_url": passport_data.get("thumbnailUrl", ""),  # thumbnailUrl
+            "is_verified": passport_data.get("isVerified", False),
+            "is_superhost": passport_data.get("isSuperhost", False),
+            "rating_count": passport_data.get("ratingCount", 0),
+            "rating_average": passport_data.get("ratingAverage", 0.0),
+            "time_as_host_years": time_as_host.get("years"),
+            "time_as_host_months": time_as_host.get("months")
         }
 
     def _create_listing_request(self, listing_data: Dict[str, Any]) -> Request:
@@ -423,17 +455,18 @@ class ListingsSpider(scrapy.Spider):
             ListingsSpider._parse_listings_number(script_tag_json, listing_item)
             ListingsSpider._parse_host_id(script_tag_json, listing_item)
         except Exception as e:
-            print(e)
+            logger.error(f"Error in handle_listing: {e}", exc_info=True)
         finally:
             yield listing_item
 
     @staticmethod
-    def _parse_host_id(self, script_tag_json, listing_item) -> ExpandedAirBnBListingItem:
+    def _parse_host_id(script_tag_json, listing_item) -> ExpandedAirBnBListingItem:
         """
         Handle the response from the listing detail page and extract host information.
 
         Args:
-            response (Response): The response object from the listing detail page request.
+            script_tag_json (dict): The JSON data extracted from the script tag.
+            listing_item (ExpandedAirBnBListingItem): The listing item to populate.
 
         Returns:
             ExpandedAirBnBListingItem: The scraped listing item with host information.
@@ -448,16 +481,16 @@ class ListingsSpider(scrapy.Spider):
             if section.get('sectionId') == 'MEET_YOUR_HOST':
                 card_data = section.get('section', {}).get('cardData', {})
                 host_info = {
-                    'user_id': card_data.get('userId'),
+                    'user_id': ListingsSpider._decode_base64_id(card_data.get('userId')),
                     'host_name': card_data.get('name'),
                     'profile_picture_url': card_data.get('profilePictureUrl'),
                     'is_superhost': card_data.get('isSuperhost'),
                 }
                 break
-        listing_item['user_id'] = host_info['user_id']
-        listing_item['host_name'] = host_info['host_name']
-        listing_item['profile_picture_url'] = host_info['profile_picture_url']
-        listing_item['is_superhost'] = host_info['is_superhost']
+        listing_item['user_id'] = host_info.get('user_id')
+        listing_item['host_name'] = host_info.get('host_name')
+        listing_item['profile_picture_url'] = host_info.get('profile_picture_url')
+        listing_item['is_superhost'] = host_info.get('is_superhost')
         return listing_item
 
     @staticmethod
@@ -466,12 +499,12 @@ class ListingsSpider(scrapy.Spider):
         Extract the room capacity and location (City) of the listing from the provided JSON data.
         """
         location = ""
-        person_capacity = ""
+        person_capacity = None
         try:
             # Look for location and capacity in the sidebar and house rules
             sidebar = ListingsSpider._safe_get(script_tag_json, "data", "presentation", "stayProductDetailPage",
                                                "sidebar", "bookItSidebar", default={})
-            person_capacity = sidebar.get("maxGuestCapacity", "")
+            person_capacity = sidebar.get("maxGuestCapacity")
 
             sections = ListingsSpider._parse_listing_json(script_tag_json)
             for section in sections:
@@ -485,10 +518,10 @@ class ListingsSpider(scrapy.Spider):
                             person_capacity = rule.get("title").split(" ")[0]
 
         except Exception as e:
-            print(e)
+            logger.error(f"Error in _parse_capacity_and_location: {e}", exc_info=True)
         finally:
             listing_item['location'] = location
-            listing_item['person_capacity'] = person_capacity
+            listing_item['person_capacity'] = person_capacity if person_capacity else None
 
     @staticmethod
     def _parse_listings_number(data: str, listing_item) -> Dict[str, str]:
@@ -523,7 +556,7 @@ class ListingsSpider(scrapy.Spider):
                         result['title'] = section['section']['title']
                         break
             except (KeyError, TypeError) as e:
-                print(f"Warning: Could not extract title - {e}")
+                logger.warning(f"Could not extract title - {e}")
 
             # Find registration details in the description modal
             try:
@@ -548,17 +581,17 @@ class ListingsSpider(scrapy.Spider):
                                 break
                         break
             except (KeyError, TypeError) as e:
-                print(f"Warning: Could not extract registration numbers - {e}")
+                logger.warning(f"Could not extract registration numbers - {e}")
 
             finally:
                 listing_item["beds"] = ""
                 listing_item["baths_text"] = ""
                 listing_item["registration_number"] = result['registration_numbers']
         except json.JSONDecodeError as e:
-            print(f"Error: Invalid JSON format - {e}")
+            logger.error(f"Invalid JSON format in _parse_listings_number - {e}", exc_info=True)
             return {}
         except Exception as e:
-            print(f"Error: Unexpected error - {e}")
+            logger.error(f"Unexpected error in _parse_listings_number - {e}", exc_info=True)
             return {}
     #
     # @staticmethod
