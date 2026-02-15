@@ -8,7 +8,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-configure_logging()
+configure_logging(settings={
+    'LOG_FORMAT': '%(asctime)s [%(name)s] %(levelname)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s'
+})
 
 
 def run_spider():
