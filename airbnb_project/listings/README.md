@@ -79,6 +79,22 @@ Example usage with `curl`:
 curl http://localhost:8001/listings/harvest-listings/
 ```
 
+### Refresh Listing Endpoint
+
+This endpoint triggers a refresh for a specific Airbnb listing by its ID. This is useful for debugging malformed data or updating a single entry without running a full harvest.
+
+- **URL**: `/listings/refresh-listing/<airbnb_listing_id>/`
+- **Method**: `GET`
+- **Success Response**:
+    - **Code**: 202
+    - **Content**: Refresh task for <airbnb_listing_id> started
+
+Example usage with `curl`:
+
+```bash
+curl http://localhost:8001/listings/refresh-listing/12345678/ (Trailing / is important)
+```
+
 ## Testing
 
 To run tests within the `listings` container, execute the following command:
