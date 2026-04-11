@@ -13,6 +13,7 @@ import requests
 import os
 import json
 import logging
+from billiard.context import Process
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,17 @@ def run_spider():
     runner.crawl(ListingsSpider)
     runner.start(stop_after_crawl=False)
     
+    def _run():
+        try:
+            runner = CrawlerProcess(settings=get_harvester_settings())
+            runner.crawl(ListingsSpider)
+            runner.start()  # This blocks until finished
+        except Exception as e:
+            logger.error(f"Spider subprocess failed: {e}")
+
+    p = Process(target=_run)
+    p.start()
+    p.join()
 
 @shared_task(bind=True, retry_kwargs={'max_retries': 1}, ignore_result=True, time_limit=3600, soft_time_limit=3400)
 def run_harvest_task(self):

@@ -112,8 +112,8 @@ class DjangoORMPipeline:
     A Django ORM pipeline for processing and storing Airbnb listing and host data.
 
     This pipeline handles the creation of new Listing and ListingHost objects in the database.
-    It ensures that no duplicate listings are created based on the airbnb_listing_id,
-    and that host data is correctly associated with each listing.
+    It records a new entry for every listing scrape to maintain a history of data over time,
+    and ensures that host data is correctly associated with each listing record.
     All fields are required and must be present in the input item. The pipeline includes
     error handling for database integrity issues and logging capabilities for monitoring the data flow.
     """
@@ -145,7 +145,7 @@ class DjangoORMPipeline:
 
         Note:
             - All fields are required - missing or empty airbnb_listing_id will cause the item to be logged and skipped
-            - If a listing with the same airbnb_listing_id exists, it will be skipped
+            - A new row is created for every item to track the history of the listing
         """
 
         airbnb_listing_id = item.get('airbnb_listing_id', '')
@@ -184,30 +184,24 @@ class DjangoORMPipeline:
                 spider.logger.info(f"Host {host_info['user_id']} already exists.")
 
         try:
-            # Create or update the Listing object
-            listing, created = Listing.objects.update_or_create(
+            # Create a new Listing record for each scrape to track history
+            listing = Listing.objects.create(
                 airbnb_listing_id=item.get('airbnb_listing_id'),
-                defaults={
-                    'name': item.get('name'),
-                    'title': item.get('title'),
-                    'baths': item.get('baths'),
-                    'beds': item.get('beds'),
-                    'latitude': item.get('latitude'),
-                    'longitude': item.get('longitude'),
-                    'person_capacity': item.get('person_capacity'),
-                    'registration_number': item.get('registration_number'),
-                    'room_type': item.get('room_type'),
-                    'location': item.get('location'),
-                    'is_bath_shared': item.get('bath_is_shared'),
-                    'baths_text': item.get('baths_text'),
-                    'host': host  # Link the host to the listing
-                }
+                name=item.get('name'),
+                title=item.get('title'),
+                baths=item.get('baths'),
+                beds=item.get('beds'),
+                latitude=item.get('latitude'),
+                longitude=item.get('longitude'),
+                person_capacity=item.get('person_capacity'),
+                registration_number=item.get('registration_number'),
+                room_type=item.get('room_type'),
+                location=item.get('location'),
+                is_bath_shared=item.get('bath_is_shared'),
+                baths_text=item.get('baths_text'),
+                host=host  # Link the host to the listing record
             )
-
-            if created:
-                spider.logger.info(f"New listing {item.get('airbnb_listing_id')} saved to the database.")
-            else:
-                spider.logger.info(f"Existing listing {item.get('airbnb_listing_id')} updated in the database.")
+            spider.logger.info(f"New listing record for {item.get('airbnb_listing_id')} saved to the database.")
 
         except IntegrityError as e:
             spider.logger.error(f"Failed to save listing {item.get('airbnb_listing_id')} to the database: {e}")

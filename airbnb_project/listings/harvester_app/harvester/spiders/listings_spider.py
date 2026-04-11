@@ -28,7 +28,7 @@ def extract_registration_numbers(text: str) -> str:
         String in format "municipal;provincial" where empty values are represented as empty strings
     """
     # Pattern to extract Municipal registration number
-    municipal_pattern = r'Municipal registration number:\s*#?([\w-]+)'
+    municipal_pattern = r'Municipal registration number:\s*(?:#|No\b\.?|Licence\b|License\b|Vancouver\b|Business\b|[#\s])*([\w-]+(?:\s*-\s*[\w-]+)*)'
 
     # Pattern to extract Provincial registration number
     provincial_pattern = r'Provincial registration number:\s*([A-Z0-9-]+)'
@@ -39,12 +39,12 @@ def extract_registration_numbers(text: str) -> str:
 
 
     # Extract values or use empty string if not found
-    municipal = municipal_match.group(1) if municipal_match else ""
+    municipal = municipal_match.group(1).replace(" ", "") if municipal_match else ""
     provincial = provincial_match.group(1) if provincial_match else ""
 
-    logger.debug(f"municipal registration number: {municipal}")
-    logger.debug(f"provincial registration number: {provincial}")
-    logger.debug(f"text: {text}")
+    logger.info(f"municipal registration number: {municipal}")
+    logger.info(f"provincial registration number: {provincial}")
+    logger.info(f"text: {text}")
 
     # Format as requested
     return f"{municipal};{provincial}"
@@ -524,7 +524,7 @@ class ListingsSpider(scrapy.Spider):
             listing_item['person_capacity'] = person_capacity if person_capacity else None
 
     @staticmethod
-    def _parse_listings_number(data: str, listing_item) -> Dict[str, str]:
+    def _parse_listings_number(data: Dict[str, Any], listing_item) -> Dict[str, str]:
         """
         Extract title and registration numbers from Airbnb listing JSON.
 
