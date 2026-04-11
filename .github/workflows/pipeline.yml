@@ -209,15 +209,15 @@ jobs:
               cd airbnb-regulation
             else
               cd airbnb-regulation
-              echo "Stashing local changes to clear the working directory..."
-              # Stash changes including untracked files to ensure a clean state
-              git stash push -m "Auto-stash before update $(date +%Y-%m-%d)"
-              echo "Pulling latest changes..."
-              git pull origin main
+              echo "Cleaning local state and fetching latest changes..."
+              git fetch origin
+              git reset --hard
+              git clean -fd
             fi
 
-            echo "Pulling latest changes from main branch..."
-            git pull origin dev
+            echo "Switching to dev branch..."
+            git checkout dev || git checkout -b dev
+            git reset --hard origin/dev
             
             echo "Creating .env file with environment variables..."
             cat <<EOF > .env
