@@ -173,10 +173,11 @@ class DjangoORMPipeline:
         # Create or update the ListingHost if host information is available
         host = None
         if host_info['user_id']:
-            host, created = ListingHost.objects.get_or_create(
+            host, created = ListingHost.objects.update_or_create(
                 user_id=host_info['user_id'],
                 defaults=host_info
             )
+
             if created:
                 spider.logger.info(f"New host {host_info['user_id']} created.")
             else:
@@ -184,26 +185,29 @@ class DjangoORMPipeline:
 
         try:
             # Create or update the Listing object
-            listing = Listing(
+            listing, created = Listing.objects.update_or_create(
                 airbnb_listing_id=item.get('airbnb_listing_id'),
-                name=item.get('name'),
-                title=item.get('title'),
-                baths=item.get('baths'),
-                beds=item.get('beds'),
-                latitude=item.get('latitude'),
-                longitude=item.get('longitude'),
-                person_capacity=item.get('person_capacity'),
-                registration_number=item.get('registration_number'),
-                room_type=item.get('room_type'),
-                location=item.get('location'),
-                is_bath_shared=item.get('bath_is_shared'),
-                baths_text=item.get('baths_text'),
-                host=host  # Link the host to the listing
+                defaults={
+                    'name': item.get('name'),
+                    'title': item.get('title'),
+                    'baths': item.get('baths'),
+                    'beds': item.get('beds'),
+                    'latitude': item.get('latitude'),
+                    'longitude': item.get('longitude'),
+                    'person_capacity': item.get('person_capacity'),
+                    'registration_number': item.get('registration_number'),
+                    'room_type': item.get('room_type'),
+                    'location': item.get('location'),
+                    'is_bath_shared': item.get('bath_is_shared'),
+                    'baths_text': item.get('baths_text'),
+                    'host': host  # Link the host to the listing
+                }
             )
 
-            # Save the listing to the database
-            listing.save()
-            spider.logger.info(f"New listing {item.get('airbnb_listing_id')} saved to the database.")
+            if created:
+                spider.logger.info(f"New listing {item.get('airbnb_listing_id')} saved to the database.")
+            else:
+                spider.logger.info(f"Existing listing {item.get('airbnb_listing_id')} updated in the database.")
 
         except IntegrityError as e:
             spider.logger.error(f"Failed to save listing {item.get('airbnb_listing_id')} to the database: {e}")
