@@ -206,9 +206,16 @@ jobs:
             if [ ! -d "airbnb-regulation" ]; then
               echo "Cloning project repository..."
               git clone https://github.com/CodeForBc/airbnb-regulation
+              cd airbnb-regulation
+            else
+              cd airbnb-regulation
+              echo "Stashing local changes to clear the working directory..."
+              # Stash changes including untracked files to ensure a clean state
+              git stash push -m "Auto-stash before update $(date +%Y-%m-%d)"
+              echo "Pulling latest changes..."
+              git pull origin main
             fi
 
-            cd airbnb-regulation
             echo "Pulling latest changes from main branch..."
             git pull origin dev
             
